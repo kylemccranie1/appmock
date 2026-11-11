@@ -42,6 +42,12 @@ export class Engine {
     this.basemap = await createBasemap(this.map);
     this.basemap.set(store.get('core:basemap', 'vector'));
 
+    // Bottom-of-map banners: the place for an action the user should take next.
+    this.bannerHost = el('div', { id: 'banners' });
+    this.map.getContainer().append(this.bannerHost);
+    L.DomEvent.disableClickPropagation(this.bannerHost);
+    L.DomEvent.disableScrollPropagation(this.bannerHost);
+
     this.admin = new AdminConsole(this);
     this.data = new DataLoad(this);
     this.#wireMap();
@@ -163,6 +169,7 @@ export class Engine {
     const id = rec.meta.id;
     const track = (dispose) => { rec.disposers.push(dispose); return dispose; };
     const statusKeys = new Set();
+    let banner = null;
     return {
       id,
       L,
@@ -219,6 +226,21 @@ export class Engine {
           }
         },
         toast: (msg, opts) => this.ui.toast(msg, opts),
+        // One banner per plugin at the bottom of the map; pass null to remove it.
+        setBanner: (node) => {
+          if (!banner) {
+            banner = el('div', { class: 'banner-slot' });
+            this.bannerHost.append(banner);
+            track(() => banner.remove());
+          }
+          banner.replaceChildren(...(node ? [node] : []));
+        },
+        // Open the drawer on one of this plugin's panels.
+        showPanel: (panelId) => {
+          this.ui.toggleDrawer(true);
+          this.ui.selectPanel(`${id}:${panelId}`);
+          this.ui.onLayout?.();
+        },
         // A notification the user must acknowledge; resolves when they do.
         notify: (opts) => { const n = this.ui.notify(opts); track(() => n.cancel()); return n; },
         // While on, taps go to the map (map:click) instead of opening overlay popups.

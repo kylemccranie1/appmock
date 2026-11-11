@@ -194,7 +194,7 @@ export default {
         return [p.lat, p.lon];
       })));
       // Leave room at the top so a waiting notification does not cover the threat.
-      ctx.map.fitBounds(box, { maxZoom: 9, paddingTopLeft: [20, 200], paddingBottomRight: [20, 30] });
+      ctx.map.fitBounds(box, { maxZoom: 9, paddingTopLeft: [20, 200], paddingBottomRight: [20, 130] });
       ctx.selection.set({ kind: 'threat', id: t.id });
     }
 

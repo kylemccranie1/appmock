@@ -46,9 +46,10 @@ Built so far:
    dashed ghost where it was and a line between them labelled with distance and bearing.
 
 4. **Send to jet.** Each threat remembers the position the jet holds. Acknowledged moves show as
-   "NOT IN JET" on the map, in the top bar and in the *Jet* tab, which lists each difference
-   (jet position, tablet position, how far apart). The user picks which to send, confirms, and
-   watches a simulated transfer. Only when the jet confirms are the items marked "IN JET"; if it
+   "NOT IN JET" on the map and in the top bar, and a banner appears at the bottom of the map with
+   a one-tap *Send to jet* button, followed by transfer progress and the result. The *Jet* tab
+   lists each difference (jet position, tablet position, how far apart) for picking which to
+   send. Only when the jet confirms are the items marked "IN JET"; if it
    fails, nothing changes in the jet and the user can retry.
 
 Simulated events in the admin console: *Threat position update*, *Automatic position updates*
@@ -115,6 +116,8 @@ Everything registered through `ctx` is cleaned up automatically when the plugin 
 | `ctx.ui.addTool({ id, label, title, toggle, onToggle, onClick })` | Add a tool rail button |
 | `ctx.ui.setStatus(key, text, level)` | Top bar chip (`info`, `ok`, `warn`, `danger`); pass `null` to clear |
 | `ctx.ui.toast(message, { level, ms })` | Transient message |
+| `ctx.ui.setBanner(node)` | Show an action banner at the bottom of the map; `null` removes it |
+| `ctx.ui.showPanel(id)` | Open the drawer on one of this plugin's panels |
 | `ctx.ui.notify({ title, lines, level, action })` | Notification the user must acknowledge; returns a promise that resolves when they do |
 | `ctx.data.addSlot({ id, title, description, accept, load, clear, status, sample })` | Add a file slot to the Data panel |
 | `ctx.ui.captureMapTaps(on)` | Route taps to `map:click` instead of overlay popups (for drawing/measuring tools) |

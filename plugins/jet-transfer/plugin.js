@@ -7,7 +7,11 @@
 //   bus 'transfer:changed'  emit whenever that set of differences changes.
 //   bus 'transfer:done'     emitted here after the jet confirms and every apply() has run.
 // A transfer is all or nothing: apply() runs only after the jet confirms.
+//
+// The main control is a banner at the bottom of the map that appears as soon as
+// the tablet and the jet differ. The Jet tab holds the per-item detail.
 const STEP_MS = 900;
+const DONE_BANNER_MS = 6000;
 
 export default {
   activate(ctx) {
@@ -53,6 +57,7 @@ export default {
       if (ok) {
         for (const item of items) item.apply();
         phase = 'done';
+        setTimeout(() => { if (phase === 'done' && !disposed) { phase = 'idle'; draw(); } }, DONE_BANNER_MS);
         settling = true;
         ctx.bus.emit('transfer:done', { count: items.length });
         settling = false;
@@ -78,6 +83,43 @@ export default {
       value: failNext, onChange: (on) => { failNext = on; },
     });
 
+    // --- banner (bottom of the map) -------------------------------------------
+    function banner(items, picked, plural) {
+      const n = items.length;
+      if (phase === 'sending') {
+        return el('div', { class: 'banner' }, [
+          el('div', { class: 'txt' }, [
+            el('b', { text: progress.text }),
+            el('div', { class: 'bar' }, [el('div', { style: `width:${Math.round((100 * (progress.step + 1)) / progress.steps)}%` })]),
+          ]),
+        ]);
+      }
+      if (phase === 'done') {
+        return el('div', { class: 'banner good' }, [
+          el('div', { class: 'txt' }, [
+            el('b', { text: `✓ Jet confirmed ${plural(result.count)}` }),
+            el('small', { text: n ? `${plural(n)} still not in the jet` : 'The jet matches the tablet' }),
+          ]),
+          n ? el('button', { class: 'btn', text: 'Details', onclick: () => ctx.ui.showPanel('panel') }) : null,
+        ]);
+      }
+      if (!n) return null;
+      const names = items.slice(0, 3).map((i) => i.title).join(', ') + (n > 3 ? ` and ${n - 3} more` : '');
+      const failed = phase === 'failed';
+      return el('div', { class: `banner ${failed ? 'bad' : ''}` }, [
+        el('div', { class: 'txt' }, [
+          el('b', { text: failed ? 'Transfer failed. Nothing changed in the jet.' : `${plural(n)} not in the jet` }),
+          el('small', { text: linkUp ? names : 'Jet link not available. Changes stay on the tablet.' }),
+        ]),
+        el('button', {
+          class: 'btn primary', disabled: !linkUp || !picked.length,
+          text: failed ? 'Retry' : (picked.length === n ? 'Send to jet' : `Send ${picked.length} of ${n}`),
+          onclick: send,
+        }),
+        el('button', { class: 'btn', text: 'Details', onclick: () => ctx.ui.showPanel('panel') }),
+      ]);
+    }
+
     // --- panel ---------------------------------------------------------------
     let root = null;
     let panel = null;
@@ -87,10 +129,11 @@ export default {
       const n = items.length;
       ctx.ui.setStatus('unsent', n ? `${n} NOT IN JET` : null, 'warn');
       panel?.setTitle(n ? `Jet (${n})` : 'Jet');
-      if (!root) return;
-
       const picked = chosen(items);
       const plural = (count) => `${count} change${count === 1 ? '' : 's'}`;
+      ctx.ui.setBanner(banner(items, picked, plural));
+      if (!root) return;
+
       const body = [
         el('h3', { text: 'Send to jet' }),
         el('p', { class: linkUp ? 'slot-status ok' : 'slot-status bad', text: linkUp ? 'Jet link: connected' : 'Jet link: not available' }),
