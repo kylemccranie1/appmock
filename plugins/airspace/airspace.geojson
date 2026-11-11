@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "AR NOTIONAL 1", "type": "refuel", "status": "ACTIVE", "floor": "FL220", "ceiling": "FL280" },
+      "geometry": { "type": "Polygon", "coordinates": [[[-99.0, 37.75], [-96.9, 38.35], [-97.0, 38.6], [-99.1, 38.0], [-99.0, 37.75]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "R NOTIONAL A", "type": "restricted", "status": "ACTIVE", "floor": "SFC", "ceiling": "FL180" },
+      "geometry": { "type": "Polygon", "coordinates": [[[-96.3, 38.9], [-95.4, 38.9], [-95.2, 39.5], [-95.9, 39.8], [-96.5, 39.4], [-96.3, 38.9]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "R NOTIONAL B", "type": "restricted", "status": "COLD", "floor": "SFC", "ceiling": "FL250" },
+      "geometry": { "type": "Polygon", "coordinates": [[[-100.9, 38.6], [-99.9, 38.6], [-99.9, 39.3], [-100.9, 39.3], [-100.9, 38.6]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "TRANSIT NOTIONAL", "type": "corridor", "status": "ACTIVE", "floor": "FL200", "ceiling": "FL300" },
+      "geometry": { "type": "Polygon", "coordinates": [[[-100.6, 36.2], [-100.3, 36.0], [-97.3, 37.3], [-97.5, 37.5], [-100.6, 36.2]]] }
+    }
+  ]
+}

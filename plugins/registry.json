@@ -1,0 +1,41 @@
+{
+  "plugins": [
+    {
+      "id": "ownship",
+      "name": "Ownship",
+      "version": "0.1.0",
+      "description": "Own aircraft position from a built-in simulator or the device GPS, with a track trail.",
+      "enabled": true
+    },
+    {
+      "id": "blue-force",
+      "name": "Blue force tracks",
+      "version": "0.1.0",
+      "description": "Friendly tracks from a notional simulated feed, with range and bearing from ownship.",
+      "enabled": true
+    },
+    {
+      "id": "airspace",
+      "name": "Airspace",
+      "version": "0.1.0",
+      "description": "Notional airspace volumes and their status, loaded from a GeoJSON file.",
+      "enabled": true,
+      "assets": ["airspace.geojson"]
+    },
+    {
+      "id": "threats",
+      "name": "Threat rings",
+      "version": "0.1.0",
+      "description": "Notional threat rings with an alert when ownship is inside one.",
+      "enabled": true,
+      "assets": ["threats.json"]
+    },
+    {
+      "id": "range-bearing",
+      "name": "Range / bearing tool",
+      "version": "0.1.0",
+      "description": "Tap two points on the map to measure bearing and distance.",
+      "enabled": true
+    }
+  ]
+}

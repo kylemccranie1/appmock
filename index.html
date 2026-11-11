@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Moving Map Prototype</title>
+  <meta name="description" content="Unofficial plugin-based moving map prototype. Notional data only.">
+  <meta name="theme-color" content="#0b1118">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header id="topbar">
+    <div class="brand">MOVING MAP <span>prototype</span></div>
+    <div id="readouts">
+      <div class="ro"><label>POS</label><b id="ro-pos">--</b></div>
+      <div class="ro"><label>HDG</label><b id="ro-hdg">---</b></div>
+      <div class="ro"><label>GS</label><b id="ro-gs">---</b></div>
+      <div class="ro"><label>ALT</label><b id="ro-alt">---</b></div>
+      <div class="ro"><label>SRC</label><b id="ro-src">--</b></div>
+    </div>
+    <div id="status"></div>
+    <div id="clock">--:--:--Z</div>
+    <div id="net" class="pill">--</div>
+  </header>
+  <div id="notice">PROTOTYPE · NOTIONAL DATA · NOT FOR OPERATIONAL USE</div>
+
+  <main>
+    <div id="map"></div>
+    <nav id="toolrail" aria-label="Map tools"></nav>
+    <div id="cursor">Tap or move over the map</div>
+    <aside id="drawer">
+      <div id="tabs" role="tablist"></div>
+      <div id="panels"></div>
+    </aside>
+    <div id="toasts" aria-live="polite"></div>
+  </main>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="vendor/topojson-client.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
