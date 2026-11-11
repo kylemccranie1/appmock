@@ -72,15 +72,18 @@ python3 -m http.server 8080
 
 ## Deploy on GitHub Pages
 
-Either option works; all paths are relative, so the app runs under `/<repo>/`.
+All paths are relative, so the app runs under `/<repo>/`.
 
-- **GitHub Actions (included):** in the repo go to *Settings → Pages → Source* and choose
-  *GitHub Actions*. `.github/workflows/pages.yml` then deploys on every push to `main`.
+- **GitHub Actions (included, recommended):** in the repo go to *Settings → Pages → Source* and
+  choose *GitHub Actions*. `.github/workflows/pages.yml` runs `scripts/build.sh` and deploys the
+  result. The build copies the code into a folder named after the commit and points `index.html`
+  at it, so every file gets a new URL on every deploy and a browser can never run a mix of old
+  and new files. A new deploy shows up on the next load.
 - **From a branch:** *Settings → Pages → Source → Deploy from a branch*, pick the branch and
-  `/ (root)`.
+  `/ (root)`. This works without the build, but browsers may keep serving some old files for
+  about ten minutes after a deploy.
 
-After a new deploy, the service worker serves the cached copy first and refreshes in the
-background, so changes appear on the second load.
+The version a device is running is shown at the bottom of the admin console.
 
 ## Writing a plugin
 

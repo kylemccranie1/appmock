@@ -11,7 +11,7 @@ export async function createBasemap(map) {
   const vector = L.layerGroup().addTo(map);
 
   try {
-    const topo = await (await fetch('data/countries-50m.json')).json();
+    const topo = await (await fetch(new URL('../../data/countries-50m.json', import.meta.url))).json();
     const land = window.topojson.feature(topo, topo.objects.land);
     const borders = window.topojson.mesh(topo, topo.objects.countries, (a, b) => a !== b);
     L.geoJSON(land, {

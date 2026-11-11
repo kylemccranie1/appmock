@@ -18,8 +18,9 @@ export class AdminConsole {
   #button;
   #panel;
 
-  constructor(engine) {
+  constructor(engine, build = 'dev') {
     this.engine = engine;
+    this.build = build;
     const control = L.control({ position: 'topright' });
     control.onAdd = () => {
       const root = el('div', { class: 'admin' });
@@ -116,6 +117,7 @@ export class AdminConsole {
         ? el('ul', { class: 'admin-log' }, this.#log.map((entry) =>
           el('li', { class: entry.level }, [el('span', { text: `${entry.t.toISOString().slice(11, 19)}Z` }), el('span', { text: entry.text })])))
         : el('p', { class: 'muted', text: 'Nothing triggered yet.' }),
+      el('p', { class: 'admin-build', text: `Version ${this.build}` }),
     );
   }
 }

@@ -20,9 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: actions/configure-pages@v5
+      - name: Build versioned site
+        run: scripts/build.sh _site
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: .
+          path: _site
 
   # Separate job: deploying in the same job as the upload can run before the
   # artifact is visible to the Pages API.

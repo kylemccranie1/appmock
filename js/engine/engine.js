@@ -9,6 +9,11 @@ import * as geo from './geo.js';
 
 const L = window.L;
 
+// Folder that holds js/, plugins/ and data/. Derived from this file's own URL
+// so it also works when a deploy serves the app from a versioned folder.
+export const ROOT = new URL('../../', import.meta.url);
+export const BUILD = ROOT.pathname.match(/\/(b-[0-9a-f]{7,40})\/$/)?.[1] ?? 'dev';
+
 const store = {
   get(key, fallback) {
     try {
@@ -48,7 +53,7 @@ export class Engine {
     L.DomEvent.disableClickPropagation(this.bannerHost);
     L.DomEvent.disableScrollPropagation(this.bannerHost);
 
-    this.admin = new AdminConsole(this);
+    this.admin = new AdminConsole(this, BUILD);
     this.data = new DataLoad(this);
     this.#wireMap();
     this.#coreTools();
@@ -113,7 +118,7 @@ export class Engine {
   async #loadPlugins() {
     let registry = [];
     try {
-      registry = (await (await fetch('plugins/registry.json')).json()).plugins ?? [];
+      registry = (await (await fetch(new URL('plugins/registry.json', ROOT))).json()).plugins ?? [];
     } catch (err) {
       console.error('[plugins] registry failed to load', err);
       this.ui.toast('Plugin registry failed to load', { level: 'warn' });
@@ -132,7 +137,7 @@ export class Engine {
     if (!rec || rec.enabled) return;
     rec.error = null;
     try {
-      const base = new URL(`plugins/${id}/`, document.baseURI);
+      const base = new URL(`plugins/${id}/`, ROOT);
       const mod = await import(new URL(rec.meta.entry ?? 'plugin.js', base).href);
       rec.instance = mod.default;
       await rec.instance.activate(this.#context(rec, base));
