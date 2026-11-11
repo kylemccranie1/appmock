@@ -31,6 +31,21 @@
       "assets": ["threats.json"]
     },
     {
+      "id": "target-folder",
+      "name": "Target folder",
+      "version": "0.1.0",
+      "description": "Target points with a card for each. Accepts over-the-air updates for review before they take effect.",
+      "enabled": true,
+      "assets": ["targets.json"]
+    },
+    {
+      "id": "datalink-sim",
+      "name": "Datalink (simulated)",
+      "version": "0.1.0",
+      "description": "Simulated over-the-air link that sends target updates, with link up/down and message queueing.",
+      "enabled": true
+    },
+    {
       "id": "range-bearing",
       "name": "Range / bearing tool",
       "version": "0.1.0",

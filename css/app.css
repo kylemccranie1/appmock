@@ -81,7 +81,7 @@ main { position: relative; flex: 1; display: flex; min-height: 0; }
 #drawer.closed { margin-right: -320px; }
 #tabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
 .tab {
-  flex: 1 0 auto; min-height: var(--touch); padding: 0 12px;
+  flex: 1 0 auto; min-height: 40px; padding: 0 10px;
   background: none; border: 0; border-bottom: 2px solid transparent;
   color: var(--muted); font-size: 13px; cursor: pointer;
 }
@@ -117,6 +117,22 @@ main { position: relative; flex: 1; display: flex; min-height: 0; }
 .list li span { font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); }
 .list li.stale b { color: var(--muted); }
 .list li .tag { color: var(--warn); }
+
+.field { display: block; margin-bottom: 10px; }
+.field > span { display: block; font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 3px; }
+.field input, .field select, .field textarea {
+  width: 100%; min-height: 40px; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--bg);
+}
+.field textarea { min-height: 70px; resize: vertical; }
+.card { border: 1px solid var(--warn); border-radius: 10px; padding: 10px; margin-bottom: 10px; background: rgba(255, 179, 71, .06); }
+.card h4 { margin: 0 0 2px; font-size: 13px; color: var(--warn); }
+.card ul { margin: 6px 0 10px; padding-left: 18px; font-size: 12px; }
+.card .btnrow { margin-bottom: 0; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 600; }
+.btn.danger { border-color: var(--danger); color: var(--danger); }
+.sym.selected svg { filter: drop-shadow(0 0 5px #fff); }
+.sym.ghost { opacity: .75; }
 
 /* --- toasts ------------------------------------------------------------- */
 #toasts {

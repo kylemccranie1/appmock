@@ -26,6 +26,7 @@ export class Engine {
   ownship = null;         // { lat, lon, hdg, gs, alt, src, t }
   layers = new Map();     // id -> { id, name, layer, visible, owner }
   plugins = new Map();    // id -> { meta, enabled, instance?, disposers, error? }
+  selection = null;       // { kind, id } of the entity the user last picked, or null
   follow = false;
 
   async start() {
@@ -65,6 +66,11 @@ export class Engine {
     if (!entity) return;
     this.entities.delete(id);
     this.bus.emit('entity:remove', entity);
+  }
+
+  select(selection) {
+    this.selection = selection ?? null;
+    this.bus.emit('selection:change', this.selection);
   }
 
   // --- layers --------------------------------------------------------------
@@ -174,6 +180,10 @@ export class Engine {
           return this.upsertEntity({ source: id, ...entity });
         },
         remove: (eid) => this.removeEntity(eid),
+      },
+      selection: {
+        get: () => this.selection,
+        set: (selection) => this.select(selection),
       },
       layers: {
         add: (opts) => track(this.addLayer({ ...opts, id: `${id}:${opts.id}`, owner: id })),
