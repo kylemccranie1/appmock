@@ -27,6 +27,16 @@ export default {
     // A tool rail button.
     ctx.ui.addTool({ id: 'hello', label: '★', title: 'Say hello', onClick: () => ctx.ui.toast('Hello') });
 
+    // Simulated events for the admin console (top right). Use an action for an
+    // event fired on command and a toggle for a simulation that runs by itself.
+    ctx.admin.addAction({
+      id: 'ping', label: 'Example event', description: 'Shows a toast.',
+      run: () => ctx.ui.toast('Simulated event received'),
+    });
+    let auto = false;
+    ctx.admin.addToggle({ id: 'auto', label: 'Example auto simulation', value: auto, onChange: (on) => { auto = on; } });
+    ctx.every(10000, () => { if (auto) ctx.ui.toast('Automatic simulated event'); });
+
     // Persisted, per-plugin settings.
     ctx.settings.set('lastStarted', Date.now());
   },

@@ -3,6 +3,7 @@
 import { Bus } from './bus.js';
 import { UI, el } from './ui.js';
 import { createBasemap } from './basemap.js';
+import { AdminConsole } from './admin.js';
 import * as geo from './geo.js';
 
 const L = window.L;
@@ -40,6 +41,7 @@ export class Engine {
     this.basemap = await createBasemap(this.map);
     this.basemap.set(store.get('core:basemap', 'vector'));
 
+    this.admin = new AdminConsole(this);
     this.#wireMap();
     this.#coreTools();
     // The drawer, its panels and the top bar stay out of the way until a plugin
@@ -186,6 +188,12 @@ export class Engine {
           return this.upsertEntity({ source: id, ...entity });
         },
         remove: (eid) => this.removeEntity(eid),
+      },
+      // Simulated events for the demo operator (see js/engine/admin.js).
+      admin: {
+        addAction: (opts) => track(this.admin.add({ ...opts, kind: 'action', id: `${id}:${opts.id}`, group: opts.group ?? rec.meta.name ?? id })),
+        addToggle: (opts) => track(this.admin.add({ ...opts, kind: 'toggle', id: `${id}:${opts.id}`, group: opts.group ?? rec.meta.name ?? id })),
+        log: (text, level) => this.admin.log(text, level),
       },
       selection: {
         get: () => this.selection,

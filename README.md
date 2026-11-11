@@ -7,6 +7,15 @@ baseline for prototyping what mission apps could look like as plugins on an open
 > All tracks, airspace and threat data in this repo are notional. Not for operational or
 > navigational use. This is a public repo: do not commit real or controlled data.
 
+## Ground rule: this is a mockup
+
+The app is a working UI mockup meant to convey requirements in a practical way, not a real
+system. Anything a real system would receive from outside (a datalink message, a new threat, a
+failure) is simulated. The **admin console** in the top right of the map is where the person
+running the demo triggers those events on command or switches automatic simulations on and off.
+It is styled differently from the rest of the UI on purpose, so viewers can tell it is not part
+of what is being proposed.
+
 ## What's in the baseline
 
 - **Engine core** (`js/engine/`): map, event bus, shared ownship + entity store, layer registry,
@@ -67,6 +76,9 @@ Everything registered through `ctx` is cleaned up automatically when the plugin 
 | `ctx.bus.on(event, fn)` / `ctx.bus.emit(event, data)` | Event bus |
 | `ctx.ownship.get()` / `ctx.ownship.set(fix)` | Shared ownship `{ lat, lon, hdg, gs, alt, src }` |
 | `ctx.entities.upsert(e)` / `.remove(id)` / `.get(id)` / `.all(kind)` | Shared entity store; entities need `id`, `kind`, `lat`, `lon` |
+| `ctx.admin.addAction({ id, label, description, group, run })` | Add an on-command simulated event to the admin console |
+| `ctx.admin.addToggle({ id, label, description, group, value, onChange })` | Add an on/off automatic simulation to the admin console |
+| `ctx.admin.log(text, level)` | Write a line to the admin console log |
 | `ctx.selection.get()` / `ctx.selection.set({ kind, id })` | The entity the user last picked, shared across plugins |
 | `ctx.layers.add({ id, name, layer, visible })` | Register an overlay with a toggle in the Layers panel |
 | `ctx.ui.addPanel({ id, title, render(root) })` | Add a drawer tab |
@@ -85,6 +97,7 @@ Everything registered through `ctx` is cleaned up automatically when the plugin 
 | `ownship:update` | `{ lat, lon, hdg, gs, alt, src, t }` |
 | `entity:upsert` / `entity:remove` | The entity |
 | `selection:change` | `{ kind, id }` or `null` |
+| `admin:trigger` | `{ id }` of the simulated event that was fired |
 | `map:click` | `{ lat, lon, latlng }` |
 | `net:change` | `{ online }` |
 | `layers:change`, `plugins:change`, `engine:ready` | none |
