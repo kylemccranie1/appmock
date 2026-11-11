@@ -3,9 +3,11 @@
 // 1. Registers the Ground Threat List (GTL) slot in the Data panel. The GTL is
 //    the list the mission takes off with and what the jet already holds.
 // 2. Draws each threat on the map.
-// 3. Handles three kinds of in-flight update to a threat:
+// 3. Handles five kinds of in-flight update:
+//      new     a threat that was not in the takeoff list
 //      move    a new position
 //      type    a new type and/or threat ring size
+//      status  ACTIVE, SUSPECTED or INACTIVE
 //      remove  it is no longer a threat
 //    Each pops a notification the user must acknowledge. Only then does the map
 //    change, and it shows the change against what the jet still holds: a ghost
@@ -19,12 +21,14 @@
 // Updates are simulated from the admin console; a real feed would call
 // `receive({ threatId, kind, changes })` the same way.
 //
-// GTL file: CSV with a header row (id, name, type, lat, lon, radius_nm) or JSON
-// (an array, or { "threats": [...] }, with the same keys). Decimal degrees.
+// GTL file: CSV with a header row (id, name, type, lat, lon, radius_nm, status) or
+// JSON (an array, or { "threats": [...] }, with the same keys). Decimal degrees;
+// radius_nm and status are optional.
 const RED = '#ff5d5d';
 const GHOST = '#b98a8a';
 const GREY = '#8a97a3';
-const FIELDS = ['lat', 'lon', 'type', 'radiusNm', 'removed']; // what an update can change
+const FIELDS = ['lat', 'lon', 'type', 'radiusNm', 'status', 'removed']; // what an update can change
+const STATUSES = ['ACTIVE', 'SUSPECTED', 'INACTIVE'];
 const ALIASES = {
   id: ['id', 'threat_id'],
   name: ['name', 'designator'],
@@ -32,6 +36,7 @@ const ALIASES = {
   lat: ['lat', 'latitude'],
   lon: ['lon', 'lng', 'long', 'longitude'],
   radiusNm: ['radius_nm', 'radiusnm', 'radius', 'ring_nm'],
+  status: ['status', 'state'],
 };
 
 export default {
@@ -39,10 +44,10 @@ export default {
     const { L, geo, el } = ctx;
 
     // state: { file: { name, loadedAt, skipped }, threats: [...], pending: [...] } or null
-    // threat: { id, name, lat, lon, type, radiusNm, removed,   <- as shown on the tablet
-    //           jet: { lat, lon, type, radiusNm, removed },    <- as the jet holds it
-    //           baseline: { ...same },                         <- as loaded
-    //           history: [{ ...same, until }], updatedAt, jetAt }
+    // threat: { id, name, lat, lon, type, radiusNm, status, removed,  <- as shown on the tablet
+    //           jet: { ...same fields },    <- as the jet holds it (removed: true = the jet does not have it)
+    //           baseline: { ...same },      <- as loaded
+    //           history: [{ ...same, until }], updatedAt, jetAt, inFlight }  <- inFlight: added by an update
     // update: { id, threatId, kind, changes, from, t }
     let state = ctx.settings.get('state', null);
     const snap = (t) => Object.fromEntries(FIELDS.map((k) => [k, k === 'removed' ? !!t[k] : t[k] ?? null]));
@@ -56,20 +61,24 @@ export default {
     // How the tablet differs from the jet for one threat.
     function diff(t) {
       const j = t.jet;
+      const added = !t.removed && !!j.removed; // on the tablet, not yet in the jet
       const d = {
-        moved: t.lat !== j.lat || t.lon !== j.lon,
-        typed: t.type !== j.type || t.radiusNm !== j.radiusNm,
-        removed: !!t.removed !== !!j.removed,
+        added,
+        removed: !!t.removed && !j.removed,
+        moved: !added && (t.lat !== j.lat || t.lon !== j.lon),
+        typed: !added && (t.type !== j.type || t.radiusNm !== j.radiusNm),
+        status: !added && t.status !== j.status,
       };
-      d.any = d.moved || d.typed || d.removed;
+      d.any = d.added || d.removed || d.moved || d.typed || d.status;
       return d;
     }
     const gone = (t) => t.removed && t.jet.removed; // removed on the tablet and in the jet
 
-    // State saved by earlier versions tracked positions only.
+    // State saved by earlier versions tracked fewer fields.
     function migrate() {
       for (const t of state?.threats ?? []) {
         t.removed ??= false;
+        t.status ??= 'ACTIVE';
         t.baseline = { ...snap(t), ...(t.history?.[0] ? { lat: t.history[0].lat, lon: t.history[0].lon } : {}), ...t.baseline };
         t.jet = { ...snap(t), lat: t.baseline.lat, lon: t.baseline.lon, ...t.jet };
       }
@@ -125,8 +134,9 @@ export default {
         }
         ids.add(id);
         const radius = Number(pickField(row, 'radiusNm'));
+        const status = String(pickField(row, 'status') ?? '').trim().toUpperCase();
         const fields = {
-          lat, lon, removed: false,
+          lat, lon, removed: false, status: STATUSES.includes(status) ? status : 'ACTIVE',
           type: String(pickField(row, 'type') ?? '').trim() || 'Unknown type',
           radiusNm: Number.isFinite(radius) && radius > 0 ? radius : null,
         };
@@ -135,7 +145,7 @@ export default {
           ...fields, jet: { ...fields }, baseline: { ...fields }, history: [], updatedAt: null, jetAt: null,
         });
       });
-      if (!threats.length) throw new Error('no valid threats found. Expected columns: id, name, type, lat, lon, radius_nm');
+      if (!threats.length) throw new Error('no valid threats found. Expected columns: id, name, type, lat, lon, radius_nm, status');
       return { threats, skipped };
     }
 
@@ -152,7 +162,7 @@ export default {
     ctx.data.addSlot({
       id: 'gtl',
       title: 'Ground Threat List (GTL)',
-      description: 'The threat list the mission takes off with, matching what is loaded in the jet. CSV or JSON with id, name, type, lat, lon, radius_nm.',
+      description: 'The threat list the mission takes off with, matching what is loaded in the jet. CSV or JSON with id, name, type, lat, lon, radius_nm, status.',
       accept: '.csv,.json,text/csv,application/json',
       replaceWarning: 'Replace the loaded GTL? Threat updates received so far will be discarded.',
       sample: { url: ctx.assetUrl('sample-gtl.csv'), fileName: 'sample-gtl.csv' },
@@ -170,18 +180,26 @@ export default {
     const markers = new Map();
     ctx.layers.add({ id: 'threats', name: 'Ground threats', layer: group });
 
-    const symbol = (label, { color = RED, hollow = false } = {}) => L.divIcon({
+    // hollow + dashed = a reference to what the jet holds; hollow alone = not ACTIVE.
+    const symbol = (label, { color = RED, hollow = false, dashed = false } = {}) => L.divIcon({
       className: '', iconSize: [22, 22], iconAnchor: [11, 11],
       html: `<div class="sym"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 3l9 9-9 9-9-9z" ` +
-        `fill="${hollow ? 'none' : color}" stroke="${color}" stroke-width="2" ${hollow ? 'stroke-dasharray="3 3"' : ''}/></svg>` +
+        `fill="${hollow ? 'none' : color}" stroke="${color}" stroke-width="2" ${dashed ? 'stroke-dasharray="3 3"' : ''}/></svg>` +
         `<span class="lbl" style="color:${color}">${escapeHtml(label)}</span></div>`,
     });
     const circle = (p, nm, style) => L.circle([p.lat, p.lon], { radius: nm * geo.NM_TO_M, interactive: false, ...style });
+    // ACTIVE: solid and filled. SUSPECTED: long dashes, faint fill. INACTIVE: thin outline only.
+    const ringStyle = (status, emphasised) => (status === 'INACTIVE' ? { color: RED, opacity: 0.55, weight: 1.5, fill: false }
+      : status === 'SUSPECTED' ? { color: RED, weight: 2, dashArray: '14 8', fillColor: RED, fillOpacity: emphasised ? 0.1 : 0.04 }
+        : { color: RED, weight: 2, fillColor: RED, fillOpacity: emphasised ? 0.16 : 0.08 });
 
     // What differs from the jet, as short lines (used by the popup and the transfer list).
     function diffLines(t) {
       const d = diff(t), j = t.jet;
       if (d.removed) return ['No longer a threat. The jet still shows it.'];
+      if (d.added) {
+        return ['New threat: not in the jet', `${t.type} · ring ${ring(t.radiusNm)}${t.status === 'ACTIVE' ? '' : ` · ${t.status}`}`, geo.fmtLatLon(t.lat, t.lon)];
+      }
       const lines = [];
       if (d.moved) {
         lines.push(`Position: moved ${geo.distanceNm(j, t).toFixed(1)} NM on ${geo.pad3(geo.bearingDeg(j, t))}°`, `Jet holds ${geo.fmtLatLon(j.lat, j.lon)}`);
@@ -190,14 +208,15 @@ export default {
         if (t.type !== j.type) lines.push(`Type: ${j.type} → ${t.type}`);
         if (t.radiusNm !== j.radiusNm) lines.push(`Ring: ${ring(j.radiusNm)} → ${ring(t.radiusNm)}`);
       }
+      if (d.status) lines.push(`Status: ${j.status} → ${t.status}`);
       return lines;
     }
 
     function popupHtml(t) {
       const d = diff(t);
-      return `<b>${escapeHtml(t.name)}</b><br>${escapeHtml(t.type)}<br>${geo.fmtLatLon(t.lat, t.lon)}<br>Ring ${ring(t.radiusNm)}<br><br>` +
+      return `<b>${escapeHtml(t.name)}</b><br>${escapeHtml(t.type)} · ${t.status}<br>${geo.fmtLatLon(t.lat, t.lon)}<br>Ring ${ring(t.radiusNm)}<br><br>` +
         (d.any ? `<b>Not in jet</b><br>${diffLines(t).map(escapeHtml).join('<br>')}<br>Updated ${zulu(t.updatedAt)}`
-          : t.history.length ? `Updated ${zulu(t.updatedAt)}<br>Sent to jet ${zulu(t.jetAt)}` : 'As loaded in the jet');
+          : t.jetAt ? `${t.inFlight && !t.history.length ? 'Received' : 'Updated'} ${zulu(t.updatedAt)}<br>Sent to jet ${zulu(t.jetAt)}` : 'As loaded in the jet');
     }
 
     function drawMap() {
@@ -206,12 +225,12 @@ export default {
       for (const t of state?.threats ?? []) {
         if (gone(t)) continue; // removed and the jet knows: nothing left to show
         const d = diff(t), j = t.jet;
-        let label = t.name;
+        let label = t.name + (t.status === 'ACTIVE' || t.removed ? '' : ` (${t.status})`);
 
         if (t.removed) {
           // No longer a threat, but the jet still shows it: greyed out until sent.
           if (j.radiusNm) circle(j, j.radiusNm, { color: GREY, weight: 1.5, dashArray: '5 7', fill: false }).addTo(group);
-          const m = L.marker([j.lat, j.lon], { icon: symbol(`${t.name} · NO LONGER A THREAT · NOT IN JET`, { color: GREY, hollow: true }), zIndexOffset: 400 })
+          const m = L.marker([j.lat, j.lon], { icon: symbol(`${t.name} · NO LONGER A THREAT · NOT IN JET`, { color: GREY, hollow: true, dashed: true }), zIndexOffset: 400 })
             .bindPopup(() => popupHtml(t)).addTo(group);
           markers.set(t.id, m);
           continue;
@@ -220,7 +239,7 @@ export default {
         // References to what the jet holds are only drawn while it differs.
         if (d.moved) {
           if (j.radiusNm) circle(j, j.radiusNm, { color: GHOST, weight: 1.5, dashArray: '5 7', fill: false }).addTo(group);
-          L.marker([j.lat, j.lon], { icon: symbol(`${t.name} WAS HERE`, { color: GHOST, hollow: true }), interactive: false }).addTo(group);
+          L.marker([j.lat, j.lon], { icon: symbol(`${t.name} WAS HERE`, { color: GHOST, hollow: true, dashed: true }), interactive: false }).addTo(group);
           L.polyline([[j.lat, j.lon], [t.lat, t.lon]], { color: '#fff', weight: 2, dashArray: '6 6', interactive: false })
             .bindTooltip(`${geo.distanceNm(j, t).toFixed(1)} NM / ${geo.pad3(geo.bearingDeg(j, t))}°`, { permanent: true, direction: 'center', className: 'map-label' })
             .addTo(group);
@@ -233,10 +252,12 @@ export default {
           if (t.type !== j.type) label += ` · NOW ${t.type.toUpperCase()}`;
           if (t.radiusNm !== j.radiusNm) label += ` · RING ${j.radiusNm ?? 0}→${t.radiusNm ?? 0} NM`;
         }
+        if (d.status) label += ` · WAS ${j.status}`;
+        if (d.added) label += ` · NEW ${zulu(t.updatedAt).slice(0, 5)}Z`;
         if (d.any) label += ' · NOT IN JET';
 
-        if (t.radiusNm) circle(t, t.radiusNm, { color: RED, weight: 2, fillColor: RED, fillOpacity: d.any ? 0.16 : 0.08 }).addTo(group);
-        const m = L.marker([t.lat, t.lon], { icon: symbol(label), zIndexOffset: 500 }).bindPopup(() => popupHtml(t)).addTo(group);
+        if (t.radiusNm) circle(t, t.radiusNm, ringStyle(t.status, d.any)).addTo(group);
+        const m = L.marker([t.lat, t.lon], { icon: symbol(label, { hollow: t.status !== 'ACTIVE' }), zIndexOffset: 500 }).bindPopup(() => popupHtml(t)).addTo(group);
         markers.set(t.id, m);
       }
     }
@@ -279,6 +300,20 @@ export default {
     function describe(update, t) {
       const from = update.from, to = { ...from, ...update.changes };
       const received = `Received ${zulu(update.t)}`;
+      if (update.kind === 'new') {
+        return {
+          title: `GTL update: new threat ${t.name}`, level: 'danger',
+          lines: [`${to.type} · ring ${ring(to.radiusNm)}${to.status === 'ACTIVE' ? '' : ` · ${to.status}`}`, geo.fmtLatLon(to.lat, to.lon),
+            'Not in the takeoff list and not in the jet', received],
+        };
+      }
+      if (update.kind === 'status') {
+        return {
+          title: `GTL update: ${t.name} is now ${to.status}`,
+          level: { ACTIVE: 'danger', SUSPECTED: 'warn', INACTIVE: 'good' }[to.status],
+          lines: [`Was: ${from.status}`, `Now: ${to.status}`, `${from.type} · ring ${ring(from.radiusNm)}`, geo.fmtLatLon(from.lat, from.lon), received],
+        };
+      }
       if (update.kind === 'remove') {
         return {
           title: `GTL update: ${t.name} is no longer a threat`, level: 'good',
@@ -299,19 +334,31 @@ export default {
     }
 
     function announce(update) {
-      const t = byId(update.threatId);
+      const t = byId(update.threatId) ?? (update.kind === 'new' ? update.changes : null);
       if (!t) return;
       const notice = ctx.ui.notify({ ...describe(update, t), action: 'Acknowledge and show on map' });
       notices.add(notice);
       notice.then(() => { notices.delete(notice); commit(update); });
     }
 
-    // kind: 'move' (changes { lat, lon }), 'type' ({ type, radiusNm }) or 'remove' ({ removed: true }).
+    // kind and changes:
+    //   'new'    { name, type, radiusNm, status, lat, lon }  (threatId must be unused)
+    //   'move'   { lat, lon }
+    //   'type'   { type, radiusNm }
+    //   'status' { status }
+    //   'remove' { removed: true }
     function receive({ threatId, kind, changes }) {
+      if (!state) return false;
       const t = byId(threatId);
-      if (!t) return false;
-      const known = latestKnown(t);
-      if (known.removed) return false; // nothing more to say about a threat that is gone
+      let known = null;
+      if (kind === 'new') {
+        if (t || state.pending.some((u) => u.threatId === threatId)) return false;
+        changes = { status: 'ACTIVE', radiusNm: null, ...changes, removed: false };
+      } else {
+        if (!t) return false;
+        known = latestKnown(t);
+        if (known.removed) return false; // nothing more to say about a threat that is gone
+      }
       const update = { id: `upd-${Date.now().toString(36)}-${state.pending.length}`, threatId, kind, changes, t: Date.now(), from: known };
       state.pending.push(update);
       persist();
@@ -324,6 +371,16 @@ export default {
     function commit(update) {
       const t = byId(update.threatId);
       state.pending = state.pending.filter((u) => u.id !== update.id);
+      if (update.kind === 'new') {
+        const { name, ...fields } = update.changes;
+        const absent = { ...snap(fields), removed: true }; // neither the takeoff list nor the jet has it
+        const created = { id: update.threatId, name, ...snap(fields), jet: absent, baseline: { ...absent }, history: [], updatedAt: update.t, jetAt: null, inFlight: true };
+        state.threats.push(created);
+        persist();
+        ctx.admin.log(`${name} new threat acknowledged`);
+        sync();
+        return show(created);
+      }
       if (!t) return persist();
       t.history.push({ ...snap(t), until: update.t });
       Object.assign(t, update.changes);
@@ -342,7 +399,7 @@ export default {
         const snapshot = snap(t);
         items.push({
           id: `gtl:${t.id}`, group: 'Ground threat changes', title: t.name,
-          detail: d.removed ? ['Remove from the jet: no longer a threat'] : diffLines(t),
+          detail: d.removed ? ['Remove from the jet: no longer a threat'] : d.added ? ['Add to the jet: new threat', ...diffLines(t).slice(1)] : diffLines(t),
           apply: () => { t.jet = snapshot; t.jetAt = Date.now(); },
         });
       }
@@ -382,22 +439,53 @@ export default {
       receive({ threatId: t.id, kind: 'type', changes: { type, radiusNm } });
     }
 
+    function simulateStatus() {
+      const t = pickThreat();
+      const now = latestKnown(t);
+      const options = STATUSES.filter((x) => x !== now.status);
+      receive({ threatId: t.id, kind: 'status', changes: { status: options[Math.floor(Math.random() * options.length)] } });
+    }
+
+    function simulateNew() {
+      if (!state) {
+        ctx.ui.toast('Load a GTL in the Data tab first', { level: 'warn' });
+        throw new Error('no GTL loaded');
+      }
+      // Next free number, a type from the loaded GTL, placed near an existing threat.
+      const taken = [...state.threats.map((x) => x.id), ...state.pending.map((u) => u.threatId)];
+      let n = state.threats.length + 1;
+      while (taken.includes(`GT-${String(n).padStart(2, '0')}`)) n++;
+      const catalog = [...new Map(state.threats.map((x) => [x.baseline.type, x.baseline.radiusNm])).entries()];
+      const [type, radiusNm] = catalog[Math.floor(Math.random() * catalog.length)];
+      const live = state.threats.filter((x) => !x.removed);
+      const c = ctx.map.getCenter();
+      const anchor = live.length ? live[Math.floor(Math.random() * live.length)] : { lat: c.lat, lon: c.lng };
+      const at = geo.destination(anchor, Math.random() * 360, 30 + Math.random() * 40);
+      receive({
+        threatId: `GT-${String(n).padStart(2, '0')}`, kind: 'new',
+        changes: { name: `THREAT ${String(n).padStart(2, '0')}`, type, radiusNm, status: Math.random() < 0.3 ? 'SUSPECTED' : 'ACTIVE', lat: +at.lat.toFixed(5), lon: +at.lon.toFixed(5) },
+      });
+    }
+
     function simulateRemove() {
       receive({ threatId: pickThreat().id, kind: 'remove', changes: { removed: true } });
     }
 
     const group$ = 'Ground threats';
+    ctx.admin.addAction({ id: 'new', group: group$, label: 'New threat', description: 'A threat that was not in the takeoff list is reported.', run: simulateNew });
     ctx.admin.addAction({ id: 'move', group: group$, label: 'Threat position update', description: 'A random threat reports a new position 8 to 30 NM away.', run: simulateMove });
     ctx.admin.addAction({ id: 'type', group: group$, label: 'Threat type change', description: 'A random threat is re-identified as another type with a different ring size.', run: simulateType });
+    ctx.admin.addAction({ id: 'status', group: group$, label: 'Threat status change', description: 'A random threat becomes ACTIVE, SUSPECTED or INACTIVE.', run: simulateStatus });
     ctx.admin.addAction({ id: 'remove', group: group$, label: 'No longer a threat', description: 'A random threat is reported as no longer a threat.', run: simulateRemove });
     let auto = false;
     ctx.admin.addToggle({
       id: 'auto', group: group$, label: 'Automatic updates',
-      description: 'Every 30 s a random threat moves or changes type.', value: auto, onChange: (on) => { auto = on; },
+      description: 'Every 30 s a random threat moves, changes type or changes status.', value: auto, onChange: (on) => { auto = on; },
     });
     ctx.every(30000, () => {
       if (!auto || !state?.threats.some((t) => !latestKnown(t).removed)) return;
-      (Math.random() < 0.7 ? simulateMove : simulateType)();
+      const roll = Math.random();
+      (roll < 0.55 ? simulateMove : roll < 0.8 ? simulateStatus : simulateType)();
     });
     ctx.admin.addAction({
       id: 'reset', group: group$, label: 'Reset to takeoff list',
@@ -406,6 +494,7 @@ export default {
         if (!state) return;
         cancelNotices();
         state.pending = [];
+        state.threats = state.threats.filter((t) => !t.inFlight); // threats added by updates were never in the takeoff list
         for (const t of state.threats) Object.assign(t, t.baseline, { jet: { ...t.baseline }, history: [], updatedAt: null, jetAt: null });
         persist();
         sync();
@@ -416,8 +505,9 @@ export default {
     let root = null;
     function tag(t) {
       const d = diff(t);
-      if (!t.history.length) return { text: 'As loaded', warn: false };
-      const what = t.removed ? 'REMOVED' : [d.moved && 'MOVED', d.typed && 'TYPE CHANGED'].filter(Boolean).join(' + ') || 'UPDATED';
+      if (!t.history.length && !t.inFlight) return { text: 'As loaded', warn: false };
+      const what = t.removed ? 'REMOVED' : d.added ? 'NEW'
+        : [d.moved && 'MOVED', d.typed && 'TYPE CHANGED', d.status && 'STATUS CHANGED'].filter(Boolean).join(' + ') || (t.inFlight && !t.history.length ? 'ADDED' : 'UPDATED');
       return { text: `${what} · ${d.any ? 'NOT IN JET' : 'IN JET'}`, warn: d.any };
     }
 
@@ -436,7 +526,7 @@ export default {
         return el('li', { class: gone(t) ? 'stale' : '', onclick: () => { show(t); markers.get(t.id)?.openPopup(); } }, [
           el('b', { text: t.name }),
           el('span', { class: warn ? 'tag' : '', text }),
-          el('span', { text: t.type }),
+          el('span', { text: `${t.type} · ${t.status}` }),
           el('span', { text: `Ring ${ring(t.radiusNm)}` }),
         ]);
       };

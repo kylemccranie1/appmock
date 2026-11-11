@@ -227,6 +227,7 @@ main { position: relative; flex: 1; display: flex; min-height: 0; }
 .alert.danger { border-color: var(--danger); }
 .alert h4 { margin: 0 0 8px; font-size: 16px; color: var(--warn); }
 .alert.danger h4 { color: var(--danger); }
+.alert.warn h4 { color: var(--warn); }
 .alert.good { border-color: var(--ok); }
 .alert.good h4 { color: var(--ok); }
 .alert p { margin: 2px 0; font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
