@@ -193,6 +193,7 @@ export class Engine {
       admin: {
         addAction: (opts) => track(this.admin.add({ ...opts, kind: 'action', id: `${id}:${opts.id}`, group: opts.group ?? rec.meta.name ?? id })),
         addToggle: (opts) => track(this.admin.add({ ...opts, kind: 'toggle', id: `${id}:${opts.id}`, group: opts.group ?? rec.meta.name ?? id })),
+        setToggle: (toggleId, on) => this.admin.setToggle(`${id}:${toggleId}`, on),
         log: (text, level) => this.admin.log(text, level),
       },
       // File slots in the Data panel (see js/engine/dataload.js).

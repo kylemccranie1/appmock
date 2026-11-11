@@ -174,6 +174,20 @@ main { position: relative; flex: 1; display: flex; min-height: 0; }
 .slot-foot a { color: var(--blue); }
 .linkbtn { background: none; border: 0; color: var(--danger); cursor: pointer; font-size: 12px; padding: 6px 0; }
 
+/* --- jet transfer ---------------------------------------------------------- */
+.slot-status.ok { color: var(--ok); }
+.slot-status.bad { color: var(--danger); }
+.card.good { border-color: var(--ok); background: rgba(84, 209, 140, .06); }
+.card.good h4 { color: var(--ok); }
+.card.bad { border-color: var(--danger); background: rgba(255, 93, 93, .06); }
+.card.bad h4 { color: var(--danger); }
+.bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin-top: 8px; }
+.bar div { height: 100%; background: var(--accent); transition: width .4s ease; }
+.row.change { align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.row.change span { display: flex; flex-direction: column; gap: 1px; }
+.row.change small { font: 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
 /* --- notifications that need acknowledging ------------------------------- */
 #alerts {
   position: absolute; z-index: 950; top: 56px; left: 50%; transform: translateX(-50%);

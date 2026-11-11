@@ -24,7 +24,7 @@ of what is being proposed.
   precaches the app shell and every registered plugin. An optional online street map caches
   tiles as they are viewed.
 - **Data panel**: one upload slot per mission file type. The first is the Ground Threat List.
-- **One plugin so far** (`plugins/ground-threats/`). Features are being added one at a time; the
+- **Two plugins so far** (`plugins/ground-threats/` and `plugins/jet-transfer/`). Features are being added one at a time; the
   earlier demo plugins are in the git history.
 
 ## Use case: threat updates in flight
@@ -45,10 +45,18 @@ Built so far:
 3. **Show the change.** On acknowledge, the map zooms to the threat at its new position, with a
    dashed ghost where it was and a line between them labelled with distance and bearing.
 
-Simulated events in the admin console: *Threat position update*, *Automatic position updates*
-(every 30 s) and *Reset to takeoff positions*.
+4. **Send to jet.** Each threat remembers the position the jet holds. Acknowledged moves show as
+   "NOT IN JET" on the map, in the top bar and in the *Jet* tab, which lists each difference
+   (jet position, tablet position, how far apart). The user picks which to send, confirms, and
+   watches a simulated transfer. Only when the jet confirms are the items marked "IN JET"; if it
+   fails, nothing changes in the jet and the user can retry.
 
-Not built yet: pushing the acknowledged changes to the jet.
+Simulated events in the admin console: *Threat position update*, *Automatic position updates*
+(every 30 s), *Reset to takeoff positions*, *Jet link available* and *Next transfer fails*.
+
+Other plugins can offer their own changes to the transfer: listen for `transfer:collect` and push
+`{ id, group, title, detail, apply() }` items into the array, emit `transfer:changed` when the
+set changes, and persist on `transfer:done`.
 
 No build step and no runtime dependencies beyond the vendored Leaflet and topojson-client.
 

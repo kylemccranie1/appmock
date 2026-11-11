@@ -7,6 +7,9 @@
 //    must acknowledge. Only then does the map show the threat at its new
 //    position, with a ghost and a line back to where it was.
 //
+// 4. Tracks, per threat, the position the jet holds. Any difference is offered
+//    to the jet-transfer plugin (see its header for the bus contract).
+//
 // Updates are simulated from the admin console; a real feed would call
 // `receive({ threatId, lat, lon })` the same way.
 //
@@ -28,8 +31,14 @@ export default {
     const { L, geo, el } = ctx;
 
     // state: { file: { name, loadedAt }, threats: [...], pending: [...] } or null
-    // threat: { id, name, type, lat, lon, radiusNm, history: [{ lat, lon, until }], updatedAt }
+    // threat: { id, name, type, lat, lon, radiusNm, history: [{ lat, lon, until }], updatedAt,
+    //           baseline: { lat, lon } as loaded, jet: { lat, lon } as the jet holds it, jetAt }
     let state = ctx.settings.get('state', null);
+    for (const t of state?.threats ?? []) { // state saved before the jet was tracked
+      t.baseline ??= t.history[0] ? { lat: t.history[0].lat, lon: t.history[0].lon } : { lat: t.lat, lon: t.lon };
+      t.jet ??= { ...t.baseline };
+    }
+    const inJet = (t) => t.jet.lat === t.lat && t.jet.lon === t.lon;
     const persist = () => ctx.settings.set('state', state);
     const byId = (id) => state?.threats.find((t) => t.id === id);
     const zulu = (ms) => `${new Date(ms).toISOString().slice(11, 19)}Z`;
@@ -85,7 +94,7 @@ export default {
           name: String(pickField(row, 'name') ?? '').trim() || id,
           type: String(pickField(row, 'type') ?? '').trim() || 'Unknown type',
           radiusNm: Number.isFinite(radius) && radius > 0 ? radius : null,
-          history: [], updatedAt: null,
+          history: [], updatedAt: null, baseline: { lat, lon }, jet: { lat, lon }, jetAt: null,
         });
       });
       if (!threats.length) throw new Error('no valid threats found. Expected columns: id, name, type, lat, lon, radius_nm');
@@ -135,7 +144,8 @@ export default {
       return `<b>${escapeHtml(t.name)}</b><br>${escapeHtml(t.type)}<br>${geo.fmtLatLon(t.lat, t.lon)}` +
         (t.radiusNm ? `<br>Ring ${t.radiusNm} NM` : '') +
         (prev ? `<br><br><b>Moved ${geo.distanceNm(prev, t).toFixed(1)} NM on ${geo.pad3(geo.bearingDeg(prev, t))}°</b>` +
-          `<br>Was: ${geo.fmtLatLon(prev.lat, prev.lon)}<br>Updated ${zulu(t.updatedAt)}<br>Jet still holds the takeoff position` : '<br>As loaded in the jet');
+          `<br>Was: ${geo.fmtLatLon(prev.lat, prev.lon)}<br>Updated ${zulu(t.updatedAt)}<br>` +
+          (inJet(t) ? `Sent to jet ${zulu(t.jetAt)}` : `<b>Not in jet.</b> Jet holds ${geo.fmtLatLon(t.jet.lat, t.jet.lon)}`) : '<br>As loaded in the jet');
     }
 
     function drawMap() {
@@ -158,7 +168,7 @@ export default {
         if (t.radiusNm) {
           L.circle([t.lat, t.lon], { radius: t.radiusNm * geo.NM_TO_M, color: RED, weight: 2, fillColor: RED, fillOpacity: prev ? 0.16 : 0.08, interactive: false }).addTo(group);
         }
-        const m = L.marker([t.lat, t.lon], { icon: symbol(prev ? `${t.name} · MOVED ${zulu(t.updatedAt).slice(0, 5)}Z` : t.name), zIndexOffset: 400 })
+        const m = L.marker([t.lat, t.lon], { icon: symbol(prev ? `${t.name} · MOVED ${zulu(t.updatedAt).slice(0, 5)}Z · ${inJet(t) ? 'IN JET' : 'NOT IN JET'}` : t.name), zIndexOffset: 400 })
           .bindPopup(() => popupHtml(t))
           .addTo(group);
         markers.set(t.id, m);
@@ -245,6 +255,24 @@ export default {
       show(t);
     }
 
+    // --- differences from the jet, offered to the jet-transfer plugin ----------
+    ctx.bus.on('transfer:collect', (items) => {
+      for (const t of state?.threats ?? []) {
+        if (inJet(t)) continue;
+        const snapshot = { lat: t.lat, lon: t.lon };
+        items.push({
+          id: `gtl:${t.id}`, group: 'Ground threat positions', title: t.name,
+          detail: [
+            `Jet: ${geo.fmtLatLon(t.jet.lat, t.jet.lon)}`,
+            `Tablet: ${geo.fmtLatLon(t.lat, t.lon)}`,
+            `${geo.distanceNm(t.jet, t).toFixed(1)} NM / ${geo.pad3(geo.bearingDeg(t.jet, t))}° apart`,
+          ],
+          apply: () => { t.jet = snapshot; t.jetAt = Date.now(); },
+        });
+      }
+    });
+    ctx.bus.on('transfer:done', () => { persist(); sync(); });
+
     // --- simulated events (admin console) -------------------------------------
     let lastMoved = null;
     function simulateMove() {
@@ -274,13 +302,13 @@ export default {
     ctx.every(30000, () => { if (auto && state?.threats.length) simulateMove(); });
     ctx.admin.addAction({
       id: 'reset', group: 'Ground threats', label: 'Reset to takeoff positions',
-      description: 'Undo every move and discard waiting updates.',
+      description: 'Undo every move, on the tablet and in the jet, and discard waiting updates.',
       run: () => {
         if (!state) return;
         cancelNotices();
         state.pending = [];
         for (const t of state.threats) {
-          if (t.history.length) Object.assign(t, { lat: t.history[0].lat, lon: t.history[0].lon, history: [], updatedAt: null });
+          Object.assign(t, { lat: t.baseline.lat, lon: t.baseline.lon, history: [], updatedAt: null, jet: { ...t.baseline }, jetAt: null });
         }
         persist();
         sync();
@@ -306,7 +334,7 @@ export default {
             const prev = t.history.at(-1);
             return el('li', { onclick: () => { show(t); markers.get(t.id)?.openPopup(); } }, [
               el('b', { text: t.name }),
-              el('span', { class: prev ? 'tag' : '', text: prev ? `MOVED ${zulu(t.updatedAt)}` : 'As loaded' }),
+              el('span', { class: prev && !inJet(t) ? 'tag' : '', text: prev ? (inJet(t) ? 'MOVED · IN JET' : 'MOVED · NOT IN JET') : 'As loaded' }),
               el('span', { text: t.type }),
               el('span', { text: prev ? `${geo.distanceNm(prev, t).toFixed(1)} NM / ${geo.pad3(geo.bearingDeg(prev, t))}°` : (t.radiusNm ? `Ring ${t.radiusNm} NM` : '') }),
             ]);
@@ -320,8 +348,7 @@ export default {
       drawMap();
       drawPanel();
       ctx.data.refresh();
-      const moved = state?.threats.filter((t) => t.history.length).length ?? 0;
-      ctx.ui.setStatus('moved', moved ? `${moved} THREAT${moved > 1 ? 'S' : ''} MOVED` : null, 'danger');
+      ctx.bus.emit('transfer:changed');
     }
 
     // Updates that were still waiting when the app was last closed.

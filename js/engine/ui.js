@@ -39,6 +39,7 @@ export class UI {
     this.#panelsChanged();
     return {
       el: body,
+      setTitle: (text) => { tab.textContent = text; },
       remove: () => {
         tab.remove(); body.remove(); this.#panels.delete(id);
         if (this.#active === id) {

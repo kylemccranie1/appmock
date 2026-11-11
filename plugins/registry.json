@@ -7,6 +7,13 @@
       "description": "Loads the Ground Threat List (GTL), shows it on the map, and walks the user through position updates.",
       "enabled": true,
       "assets": ["sample-gtl.csv"]
+    },
+    {
+      "id": "jet-transfer",
+      "name": "Jet data transfer",
+      "version": "0.1.0",
+      "description": "Reviews the differences between the tablet and the jet and sends them over a simulated data transfer.",
+      "enabled": true
     }
   ]
 }
