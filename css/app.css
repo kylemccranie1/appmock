@@ -137,9 +137,15 @@ main { position: relative; flex: 1; display: flex; min-height: 0; }
 .sym.ghost { opacity: .75; }
 
 /* --- admin console (demo operator controls, deliberately off-palette) ---- */
-.admin { --sim: #c58cff; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.admin {
+  --sim: #c58cff; position: absolute; z-index: 820; top: 10px; right: 10px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 6px; cursor: default;
+}
+.admin.placed { align-items: flex-start; } /* dragged: anchored by its top left */
+.admin.dragging { opacity: .85; }
+.admin.dragging .admin-btn, .admin.dragging .admin-head { cursor: grabbing; }
 .admin-btn {
-  min-height: 36px; padding: 0 12px; border-radius: 8px; cursor: pointer;
+  min-height: 36px; padding: 0 12px; border-radius: 8px; cursor: grab; user-select: none; -webkit-user-select: none;
   border: 1px dashed var(--sim); background: rgba(17, 26, 36, .92); color: var(--sim);
   font: 700 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .08em;
 }
@@ -151,7 +157,7 @@ main { position: relative; flex: 1; display: flex; min-height: 0; }
 }
 .admin-panel[hidden] { display: none; }
 .admin-panel h3 { margin: 12px 0 6px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--sim); }
-.admin-head { display: flex; align-items: center; justify-content: space-between; }
+.admin-head { display: flex; align-items: center; justify-content: space-between; cursor: grab; user-select: none; -webkit-user-select: none; }
 .admin-close { width: 32px; height: 32px; border: 0; background: none; font-size: 20px; cursor: pointer; color: var(--muted); }
 .admin-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .admin-item > span { flex: 1; display: flex; flex-direction: column; }

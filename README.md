@@ -13,6 +13,7 @@ The app is a working UI mockup meant to convey requirements in a practical way, 
 system. Anything a real system would receive from outside (a datalink message, a new threat, a
 failure) is simulated. The **admin console** in the top right of the map is where the person
 running the demo triggers those events on command or switches automatic simulations on and off.
+It can be dragged anywhere over the map (by the button or the panel header) and stays where it is put.
 It is styled differently from the rest of the UI on purpose, so viewers can tell it is not part
 of what is being proposed.
 
