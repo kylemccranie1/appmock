@@ -40,21 +40,23 @@ Built so far:
    sample*). Format: CSV with a header row `id,name,type,lat,lon,radius_nm`, or JSON with the same
    keys (an array, or `{ "threats": [...] }`). Positions are decimal degrees; `radius_nm` is
    optional. Invalid and duplicate rows are skipped and reported.
-2. **Position update.** When a threat's position changes, a notification pops with the threat,
-   how far and in what direction it moved, and the old and new coordinates. The map does not
-   change until the user acknowledges.
-3. **Show the change.** On acknowledge, the map zooms to the threat at its new position, with a
-   dashed ghost where it was and a line between them labelled with distance and bearing.
-
+2. **Threat update.** Three kinds are handled: a new **position**, a new **type** (with its
+   threat ring size), and **no longer a threat**. Each pops a notification saying what changed.
+   The map does not change until the user acknowledges.
+3. **Show the change against what the jet holds.** On acknowledge, the map zooms to the threat.
+   A move shows a dashed ghost where the jet still has it and a line labelled with distance and
+   bearing. A type change shows the new ring with the old ring dashed, and the label gives the
+   new type and ring sizes. A threat that is no longer a threat is greyed out.
 4. **Send to jet.** Each threat remembers the position the jet holds. Acknowledged moves show as
    "NOT IN JET" on the map and in the top bar, and a banner appears at the bottom of the map with
    a one-tap *Send to jet* button, followed by transfer progress and the result. The *Jet* tab
    lists each difference (jet position, tablet position, how far apart) for picking which to
-   send. Once the jet confirms, the ghost and line are removed and the threat is drawn only at its
-   updated position; if the transfer fails, nothing changes in the jet and the user can retry.
+   send. Once the jet confirms, the references are removed: a changed threat is drawn normally in
+   its updated state and a removed threat disappears from the map; if the transfer fails, nothing changes in the jet and the user can retry.
 
-Simulated events in the admin console: *Threat position update*, *Automatic position updates*
-(every 30 s), *Reset to takeoff positions*, *Jet link available* and *Next transfer fails*.
+Simulated events in the admin console: *Threat position update*, *Threat type change*, *No
+longer a threat*, *Automatic updates* (every 30 s), *Reset to takeoff list*, *Jet link available*
+and *Next transfer fails*.
 
 Other plugins can offer their own changes to the transfer: listen for `transfer:collect` and push
 `{ id, group, title, detail, apply() }` items into the array, emit `transfer:changed` when the
