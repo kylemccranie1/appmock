@@ -50,8 +50,8 @@ Built so far:
    "NOT IN JET" on the map and in the top bar, and a banner appears at the bottom of the map with
    a one-tap *Send to jet* button, followed by transfer progress and the result. The *Jet* tab
    lists each difference (jet position, tablet position, how far apart) for picking which to
-   send. Only when the jet confirms are the items marked "IN JET"; if it
-   fails, nothing changes in the jet and the user can retry.
+   send. Once the jet confirms, the ghost and line are removed and the threat is drawn only at its
+   updated position; if the transfer fails, nothing changes in the jet and the user can retry.
 
 Simulated events in the admin console: *Threat position update*, *Automatic position updates*
 (every 30 s), *Reset to takeoff positions*, *Jet link available* and *Next transfer fails*.

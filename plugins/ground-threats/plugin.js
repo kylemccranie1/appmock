@@ -152,7 +152,9 @@ export default {
       group.clearLayers();
       markers.clear();
       for (const t of state?.threats ?? []) {
-        const prev = t.history.at(-1);
+        // The previous position is only a reference while the jet still holds it.
+        // Once the move has been sent to the jet, the threat is drawn like any other.
+        const prev = inJet(t) ? null : t.history.at(-1);
         if (prev) {
           // Where it was: a dashed ghost, plus a line to where it is now.
           if (t.radiusNm) {
@@ -168,7 +170,7 @@ export default {
         if (t.radiusNm) {
           L.circle([t.lat, t.lon], { radius: t.radiusNm * geo.NM_TO_M, color: RED, weight: 2, fillColor: RED, fillOpacity: prev ? 0.16 : 0.08, interactive: false }).addTo(group);
         }
-        const m = L.marker([t.lat, t.lon], { icon: symbol(prev ? `${t.name} · MOVED ${zulu(t.updatedAt).slice(0, 5)}Z · ${inJet(t) ? 'IN JET' : 'NOT IN JET'}` : t.name), zIndexOffset: 400 })
+        const m = L.marker([t.lat, t.lon], { icon: symbol(prev ? `${t.name} · MOVED ${zulu(t.updatedAt).slice(0, 5)}Z · NOT IN JET` : t.name), zIndexOffset: 400 })
           .bindPopup(() => popupHtml(t))
           .addTo(group);
         markers.set(t.id, m);
@@ -186,7 +188,7 @@ export default {
     }
 
     function show(t) {
-      const prev = t.history.at(-1);
+      const prev = inJet(t) ? null : t.history.at(-1);
       const pts = [[t.lat, t.lon], ...(prev ? [[prev.lat, prev.lon]] : [])];
       const padNm = (t.radiusNm ?? 10) * 1.3;
       const box = L.latLngBounds(pts.flatMap(([lat, lon]) => [0, 90, 180, 270].map((b) => {
