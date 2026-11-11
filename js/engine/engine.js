@@ -30,7 +30,7 @@ export class Engine {
   follow = false;
 
   async start() {
-    const view = store.get('core:view', { center: [38.0, -97.5], zoom: 7 });
+    const view = store.get('core:view', { center: [38.0, -97.0], zoom: 4.5 });
     this.map = L.map('map', {
       zoomControl: false, minZoom: 2, maxZoom: 13, zoomSnap: 0.5,
       maxBounds: [[-85, -220], [85, 220]], maxBoundsViscosity: 0.8,
@@ -42,7 +42,13 @@ export class Engine {
 
     this.#wireMap();
     this.#coreTools();
-    this.#corePanels();
+    // The drawer, its panels and the top bar stay out of the way until a plugin
+    // gives them something to show.
+    const once = (fn) => { let done = false; return () => { if (!done) { done = true; fn(); } }; };
+    const layersPanel = once(() => this.#layersPanel());
+    const pluginsPanel = once(() => this.#pluginsPanel());
+    this.bus.on('layers:change', () => { if (this.layers.size) layersPanel(); });
+    this.bus.on('plugins:change', () => { if (this.plugins.size) pluginsPanel(); });
     this.#topbar();
     await this.#loadPlugins();
     this.bus.emit('engine:ready');
@@ -247,21 +253,36 @@ export class Engine {
   }
 
   #coreTools() {
-    this.ui.addTool({ id: 'menu', label: '☰', title: 'Show or hide the side panel', onClick: () => {
+    const relayout = () => setTimeout(() => this.map.invalidateSize(), 220);
+    const menu = this.ui.addTool({ id: 'menu', label: '☰', title: 'Show or hide the side panel', onClick: () => {
       this.ui.toggleDrawer();
-      setTimeout(() => this.map.invalidateSize(), 220);
+      relayout();
     } });
+    menu.setHidden(true);
+    this.ui.onPanels = (count) => { menu.setHidden(count === 0); relayout(); };
+    this.ui.onLayout = relayout;
     this.ui.addTool({ id: 'zoom-in', label: '+', title: 'Zoom in', onClick: () => this.map.zoomIn() });
     this.ui.addTool({ id: 'zoom-out', label: '−', title: 'Zoom out', onClick: () => this.map.zoomOut() });
+    this.ui.addTool({
+      id: 'basemap', label: '🗺', title: 'Switch between the offline map and the online street map', toggle: true,
+      active: store.get('core:basemap', 'vector') === 'osm',
+      onToggle: (on) => {
+        const mode = on ? 'osm' : 'vector';
+        store.set('core:basemap', mode);
+        this.basemap.set(mode);
+        this.bus.emit('layers:change');
+      },
+    });
     this.followTool = this.ui.addTool({
       id: 'follow', label: '◎', title: 'Keep the map centered on ownship', toggle: true,
       onToggle: (on) => this.setFollow(on),
     });
+    this.followTool.setHidden(true); // shown once something reports an ownship position
     this.setFollow(store.get('core:follow', true));
     if (window.matchMedia('(max-width: 720px)').matches) this.ui.toggleDrawer(false);
   }
 
-  #corePanels() {
+  #layersPanel() {
     this.ui.addPanel({
       id: 'core:layers', title: 'Layers',
       render: (root) => {
@@ -287,7 +308,9 @@ export class Engine {
         draw();
       },
     });
+  }
 
+  #pluginsPanel() {
     this.ui.addPanel({
       id: 'core:plugins', title: 'Plugins',
       render: (root) => {
@@ -327,6 +350,7 @@ export class Engine {
     net();
 
     this.bus.on('ownship:update', (o) => {
+      if ($('topbar').hidden) { $('topbar').hidden = false; this.followTool.setHidden(false); this.ui.onLayout?.(); }
       $('ro-pos').textContent = geo.fmtLatLon(o.lat, o.lon);
       $('ro-hdg').textContent = o.hdg == null ? '---' : `${geo.pad3(o.hdg)}°`;
       $('ro-gs').textContent = o.gs == null ? '---' : `${Math.round(o.gs)} kt`;

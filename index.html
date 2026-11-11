@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-  <header id="topbar">
+  <header id="topbar" hidden>
     <div class="brand">MOVING MAP <span>prototype</span></div>
     <div id="readouts">
       <div class="ro"><label>POS</label><b id="ro-pos">--</b></div>
@@ -34,7 +34,7 @@
     <div id="map"></div>
     <nav id="toolrail" aria-label="Map tools"></nav>
     <div id="cursor">Tap or move over the map</div>
-    <aside id="drawer">
+    <aside id="drawer" class="empty">
       <div id="tabs" role="tablist"></div>
       <div id="panels"></div>
     </aside>

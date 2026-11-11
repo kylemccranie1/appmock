@@ -14,17 +14,10 @@ baseline for prototyping what mission apps could look like as plugins on an open
 - **Offline first**: the basemap is a bundled Natural Earth vector world, and the service worker
   precaches the app shell and every registered plugin. An optional online street map caches
   tiles as they are viewed.
-- **Seven plugins** (`plugins/`), each of which can be switched on and off at runtime:
-
-  | Plugin | What it does |
-  | --- | --- |
-  | `ownship` | Own position from a racetrack simulator or the device GPS, with a trail |
-  | `blue-force` | Friendly tracks from a notional feed, with range/bearing and stale-track dimming |
-  | `airspace` | Airspace volumes from a GeoJSON file |
-  | `threats` | Threat rings from a JSON file, with an alert while ownship is inside one |
-  | `target-folder` | Target points with a card each; local add/edit; reviews over-the-air updates before applying them |
-  | `datalink-sim` | Simulated over-the-air link that sends target updates, with link up/down and queueing |
-  | `range-bearing` | Two-tap range and bearing measurement |
+- **No plugins enabled yet.** The screen is the map only: zoom, an offline/online basemap switch
+  and a cursor position readout. The side panel, the top bar and the follow-ownship button appear
+  on their own once a plugin adds a panel, a status chip or an ownship position. Features are
+  being added back one at a time; the earlier demo plugins are in the git history.
 
 No build step and no runtime dependencies beyond the vendored Leaflet and topojson-client.
 
@@ -92,36 +85,12 @@ Everything registered through `ctx` is cleaned up automatically when the plugin 
 | `ownship:update` | `{ lat, lon, hdg, gs, alt, src, t }` |
 | `entity:upsert` / `entity:remove` | The entity |
 | `selection:change` | `{ kind, id }` or `null` |
-| `link:message` | An over-the-air message (see below) |
-| `link:ack` | `{ id, result }` where result is `accepted`, `rejected`, `stale`, `invalid`, `superseded` or `ignored` |
-| `targets:change` | The full target list |
 | `map:click` | `{ lat, lon, latlng }` |
 | `net:change` | `{ online }` |
 | `layers:change`, `plugins:change`, `engine:ready` | none |
 
 Plugins should talk to each other through the entity store and the bus rather than importing
-one another. For example, `threats` publishes its rings as `kind: 'threat'` entities, and a real
-data-link adapter only needs to call `ctx.entities.upsert()` for `blue-force` to draw its tracks.
-
-## Over-the-air updates
-
-Updates reach plugins as `link:message` bus events. `datalink-sim` generates them today; a real
-transport (WebSocket, server-sent events, a gateway) only has to emit the same events and listen
-for `link:ack`.
-
-```json
-{ "id": "msg-abc-1", "seq": 1, "t": "2026-01-01T12:00:00Z", "from": "NOTIONAL C2",
-  "type": "target.upsert", "payload": { "id": "tgt-001", "rev": 2, "lat": 38.75, "lon": -96.01 } }
-```
-
-| Type | Payload | Handling in `target-folder` |
-| --- | --- | --- |
-| `target.upsert` | `id`, `rev`, plus any changed fields | New id creates a target; a known id is updated only if `rev` is higher than the stored one |
-| `target.delete` | `id` | Asks to remove the target |
-
-Messages are de-duplicated by `id`. Each change is held as pending, shown with a field-by-field
-diff and a ghost symbol at the proposed position, and applied only when the user accepts it
-(or immediately if auto-accept is on). Targets and pending updates persist in `localStorage`.
+one another.
 
 ## Known limits
 

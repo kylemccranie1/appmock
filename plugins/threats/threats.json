@@ -1,7 +1,0 @@
-{
-  "threats": [
-    { "id": "thr-01", "name": "THREAT 01", "lat": 37.15, "lon": -97.05, "radiusNm": 22 },
-    { "id": "thr-02", "name": "THREAT 02", "lat": 39.05, "lon": -98.2, "radiusNm": 30 },
-    { "id": "thr-03", "name": "THREAT 03", "lat": 36.15, "lon": -98.3, "radiusNm": 15 }
-  ]
-}

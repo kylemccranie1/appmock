@@ -1,8 +1,0 @@
-{
-  "targets": [
-    { "id": "tgt-001", "name": "NT-001 DEPOT", "category": "Storage site", "priority": 1, "status": "ACTIVE", "lat": 38.72, "lon": -96.05, "elevFt": 1250, "notes": "Notional target for demonstration." },
-    { "id": "tgt-002", "name": "NT-002 RELAY", "category": "Comms node", "priority": 2, "status": "ACTIVE", "lat": 37.95, "lon": -95.6, "elevFt": 980, "notes": "Notional target for demonstration." },
-    { "id": "tgt-003", "name": "NT-003 BRIDGE", "category": "Line of communication", "priority": 2, "status": "HOLD", "lat": 36.95, "lon": -95.35, "elevFt": 760, "notes": "On hold pending tasking." },
-    { "id": "tgt-004", "name": "NT-004 CONVOY", "category": "Mobile", "priority": 3, "status": "ACTIVE", "lat": 38.25, "lon": -94.9, "elevFt": 870, "notes": "Mobile. Expect position updates." }
-  ]
-}

@@ -36,6 +36,7 @@ export class UI {
     this.#panels.set(id, { tab, body });
     render?.(body);
     if (!this.#active) this.selectPanel(id);
+    this.#panelsChanged();
     return {
       el: body,
       remove: () => {
@@ -45,8 +46,15 @@ export class UI {
           const next = this.#panels.keys().next().value;
           if (next) this.selectPanel(next);
         }
+        this.#panelsChanged();
       },
     };
+  }
+
+  // The drawer only exists on screen while it has at least one panel.
+  #panelsChanged() {
+    this.drawer.classList.toggle('empty', this.#panels.size === 0);
+    this.onPanels?.(this.#panels.size);
   }
 
   selectPanel(id) {
@@ -78,7 +86,12 @@ export class UI {
       } else onClick?.();
     });
     this.rail.append(btn);
-    return { setActive, isActive: () => btn.classList.contains('active'), remove: () => btn.remove() };
+    return {
+      setActive,
+      isActive: () => btn.classList.contains('active'),
+      setHidden: (hidden) => { btn.hidden = hidden; },
+      remove: () => btn.remove(),
+    };
   }
 
   // --- status chips (top bar) ---------------------------------------------
@@ -86,6 +99,8 @@ export class UI {
     let chip = this.status.querySelector(`[data-key="${CSS.escape(key)}"]`);
     if (!text) { chip?.remove(); return; }
     if (!chip) { chip = el('span', { class: 'chip', 'data-key': key }); this.status.append(chip); }
+    const topbar = document.getElementById('topbar');
+    if (topbar.hidden) { topbar.hidden = false; this.onLayout?.(); }
     chip.className = `chip ${level}`;
     chip.textContent = text;
   }

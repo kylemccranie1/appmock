@@ -26,6 +26,7 @@ button, input, select { font: inherit; color: inherit; }
   background: var(--panel); border-bottom: 1px solid var(--line);
   white-space: nowrap; overflow: hidden;
 }
+#topbar[hidden], .tool[hidden], #drawer.empty { display: none; }
 .brand { font-weight: 700; letter-spacing: .08em; font-size: 14px; }
 .brand span { color: var(--muted); font-weight: 400; letter-spacing: 0; text-transform: lowercase; }
 #readouts { display: flex; gap: 16px; flex: 1; min-width: 0; overflow: hidden; }
