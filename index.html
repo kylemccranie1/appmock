@@ -17,7 +17,7 @@
 <body>
   <header id="topbar" hidden>
     <div class="brand">MOVING MAP <span>prototype</span></div>
-    <div id="readouts">
+    <div id="readouts" hidden>
       <div class="ro"><label>POS</label><b id="ro-pos">--</b></div>
       <div class="ro"><label>HDG</label><b id="ro-hdg">---</b></div>
       <div class="ro"><label>GS</label><b id="ro-gs">---</b></div>
@@ -39,6 +39,7 @@
       <div id="panels"></div>
     </aside>
     <div id="toasts" aria-live="polite"></div>
+    <div id="alerts"></div>
   </main>
 
   <script src="vendor/leaflet/leaflet.js"></script>

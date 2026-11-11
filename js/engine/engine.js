@@ -4,6 +4,7 @@ import { Bus } from './bus.js';
 import { UI, el } from './ui.js';
 import { createBasemap } from './basemap.js';
 import { AdminConsole } from './admin.js';
+import { DataLoad } from './dataload.js';
 import * as geo from './geo.js';
 
 const L = window.L;
@@ -42,15 +43,14 @@ export class Engine {
     this.basemap.set(store.get('core:basemap', 'vector'));
 
     this.admin = new AdminConsole(this);
+    this.data = new DataLoad(this);
     this.#wireMap();
     this.#coreTools();
     // The drawer, its panels and the top bar stay out of the way until a plugin
     // gives them something to show.
     const once = (fn) => { let done = false; return () => { if (!done) { done = true; fn(); } }; };
     const layersPanel = once(() => this.#layersPanel());
-    const pluginsPanel = once(() => this.#pluginsPanel());
     this.bus.on('layers:change', () => { if (this.layers.size) layersPanel(); });
-    this.bus.on('plugins:change', () => { if (this.plugins.size) pluginsPanel(); });
     this.#topbar();
     await this.#loadPlugins();
     this.bus.emit('engine:ready');
@@ -195,6 +195,11 @@ export class Engine {
         addToggle: (opts) => track(this.admin.add({ ...opts, kind: 'toggle', id: `${id}:${opts.id}`, group: opts.group ?? rec.meta.name ?? id })),
         log: (text, level) => this.admin.log(text, level),
       },
+      // File slots in the Data panel (see js/engine/dataload.js).
+      data: {
+        addSlot: (slot) => track(this.data.addSlot({ ...slot, id: `${id}:${slot.id}` })),
+        refresh: () => this.data.refresh(),
+      },
       selection: {
         get: () => this.selection,
         set: (selection) => this.select(selection),
@@ -213,6 +218,8 @@ export class Engine {
           }
         },
         toast: (msg, opts) => this.ui.toast(msg, opts),
+        // A notification the user must acknowledge; resolves when they do.
+        notify: (opts) => { const n = this.ui.notify(opts); track(() => n.cancel()); return n; },
         // While on, taps go to the map (map:click) instead of opening overlay popups.
         captureMapTaps: (on) => {
           this.map.getContainer().classList.toggle('capture', on);
@@ -318,29 +325,6 @@ export class Engine {
     });
   }
 
-  #pluginsPanel() {
-    this.ui.addPanel({
-      id: 'core:plugins', title: 'Plugins',
-      render: (root) => {
-        const draw = () => root.replaceChildren(
-          ...[...this.plugins.values()].map((rec) => el('div', { class: 'plugin' }, [
-            el('label', { class: 'row' }, [
-              el('input', { type: 'checkbox', checked: rec.enabled, onchange: (e) =>
-                (e.target.checked ? this.enablePlugin(rec.meta.id) : this.disablePlugin(rec.meta.id)) }),
-              el('span', { text: rec.meta.name ?? rec.meta.id }),
-              el('small', { text: `v${rec.meta.version ?? '0'}` }),
-            ]),
-            el('p', { class: 'muted', text: rec.meta.description ?? '' }),
-            rec.error ? el('p', { class: 'error', text: `Failed: ${rec.error}` }) : null,
-          ])),
-          el('p', { class: 'muted', text: 'Plugins are listed in plugins/registry.json.' }),
-        );
-        this.bus.on('plugins:change', draw);
-        draw();
-      },
-    });
-  }
-
   #topbar() {
     const $ = (id) => document.getElementById(id);
     const clock = () => { $('clock').textContent = `${new Date().toISOString().slice(11, 19)}Z`; };
@@ -358,7 +342,12 @@ export class Engine {
     net();
 
     this.bus.on('ownship:update', (o) => {
-      if ($('topbar').hidden) { $('topbar').hidden = false; this.followTool.setHidden(false); this.ui.onLayout?.(); }
+      if ($('readouts').hidden) {
+        $('topbar').hidden = false;
+        $('readouts').hidden = false;
+        this.followTool.setHidden(false);
+        this.ui.onLayout?.();
+      }
       $('ro-pos').textContent = geo.fmtLatLon(o.lat, o.lon);
       $('ro-hdg').textContent = o.hdg == null ? '---' : `${geo.pad3(o.hdg)}°`;
       $('ro-gs').textContent = o.gs == null ? '---' : `${Math.round(o.gs)} kt`;

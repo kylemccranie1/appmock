@@ -1,0 +1,7 @@
+id,name,type,lat,lon,radius_nm
+GT-01,THREAT 01,Notional type A,37.15,-97.05,22
+GT-02,THREAT 02,Notional type B,39.05,-98.20,30
+GT-03,THREAT 03,Notional type C,36.15,-98.30,15
+GT-04,THREAT 04,Notional type A,38.30,-95.40,22
+GT-05,THREAT 05,Notional type C,37.85,-100.10,15
+GT-06,THREAT 06,Notional type B,39.60,-96.10,30

@@ -23,10 +23,32 @@ of what is being proposed.
 - **Offline first**: the basemap is a bundled Natural Earth vector world, and the service worker
   precaches the app shell and every registered plugin. An optional online street map caches
   tiles as they are viewed.
-- **No plugins enabled yet.** The screen is the map only: zoom, an offline/online basemap switch
-  and a cursor position readout. The side panel, the top bar and the follow-ownship button appear
-  on their own once a plugin adds a panel, a status chip or an ownship position. Features are
-  being added back one at a time; the earlier demo plugins are in the git history.
+- **Data panel**: one upload slot per mission file type. The first is the Ground Threat List.
+- **One plugin so far** (`plugins/ground-threats/`). Features are being added one at a time; the
+  earlier demo plugins are in the git history.
+
+## Use case: threat updates in flight
+
+The overall flow being mocked up: threat information changes in flight, the crew sees it on the
+tablet first, then pushes it to the jet through a data transfer.
+
+Built so far:
+
+1. **Load the Ground Threat List (GTL).** The GTL is the list the mission takes off with and what
+   the jet already holds. Load it in the *Data* tab (file picker, drag and drop, or *Load
+   sample*). Format: CSV with a header row `id,name,type,lat,lon,radius_nm`, or JSON with the same
+   keys (an array, or `{ "threats": [...] }`). Positions are decimal degrees; `radius_nm` is
+   optional. Invalid and duplicate rows are skipped and reported.
+2. **Position update.** When a threat's position changes, a notification pops with the threat,
+   how far and in what direction it moved, and the old and new coordinates. The map does not
+   change until the user acknowledges.
+3. **Show the change.** On acknowledge, the map zooms to the threat at its new position, with a
+   dashed ghost where it was and a line between them labelled with distance and bearing.
+
+Simulated events in the admin console: *Threat position update*, *Automatic position updates*
+(every 30 s) and *Reset to takeoff positions*.
+
+Not built yet: pushing the acknowledged changes to the jet.
 
 No build step and no runtime dependencies beyond the vendored Leaflet and topojson-client.
 
@@ -85,6 +107,8 @@ Everything registered through `ctx` is cleaned up automatically when the plugin 
 | `ctx.ui.addTool({ id, label, title, toggle, onToggle, onClick })` | Add a tool rail button |
 | `ctx.ui.setStatus(key, text, level)` | Top bar chip (`info`, `ok`, `warn`, `danger`); pass `null` to clear |
 | `ctx.ui.toast(message, { level, ms })` | Transient message |
+| `ctx.ui.notify({ title, lines, level, action })` | Notification the user must acknowledge; returns a promise that resolves when they do |
+| `ctx.data.addSlot({ id, title, description, accept, load, clear, status, sample })` | Add a file slot to the Data panel |
 | `ctx.ui.captureMapTaps(on)` | Route taps to `map:click` instead of overlay popups (for drawing/measuring tools) |
 | `ctx.settings.get(key, fallback)` / `.set(key, value)` | Per-plugin persisted settings |
 | `ctx.assetUrl(path)` | URL of a file in the plugin's folder |

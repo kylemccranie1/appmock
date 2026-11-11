@@ -28,14 +28,14 @@ export class UI {
   }
 
   // --- drawer panels -------------------------------------------------------
-  addPanel({ id, title, render }) {
+  addPanel({ id, title, render, first = false }) {
     const tab = el('button', { class: 'tab', role: 'tab', text: title, onclick: () => this.selectPanel(id) });
     const body = el('section', { class: 'panel', hidden: true });
-    this.tabs.append(tab);
+    if (first) this.tabs.prepend(tab); else this.tabs.append(tab);
     this.panels.append(body);
     this.#panels.set(id, { tab, body });
     render?.(body);
-    if (!this.#active) this.selectPanel(id);
+    if (!this.#active || first) this.selectPanel(id);
     this.#panelsChanged();
     return {
       el: body,
@@ -103,6 +103,43 @@ export class UI {
     if (topbar.hidden) { topbar.hidden = false; this.onLayout?.(); }
     chip.className = `chip ${level}`;
     chip.textContent = text;
+  }
+
+  // --- notifications the user must acknowledge ------------------------------
+  // Shown one at a time, oldest first. Returns a promise that resolves when the
+  // user acknowledges; call .cancel() on it to withdraw the notification.
+  #notices = [];
+
+  notify({ title, lines = [], level = 'warn', action = 'Acknowledge' }) {
+    let resolve;
+    const promise = new Promise((r) => { resolve = r; });
+    const entry = { title, lines, level, action, resolve };
+    this.#notices.push(entry);
+    promise.cancel = () => {
+      this.#notices = this.#notices.filter((n) => n !== entry);
+      this.#drawNotice();
+    };
+    this.#drawNotice();
+    return promise;
+  }
+
+  #drawNotice() {
+    const host = document.getElementById('alerts');
+    const current = this.#notices[0];
+    if (!current) { host.replaceChildren(); return; }
+    const more = this.#notices.length - 1;
+    host.replaceChildren(el('div', { class: `alert ${current.level}`, role: 'alertdialog', 'aria-label': current.title }, [
+      el('h4', { text: current.title }),
+      ...current.lines.map((text) => el('p', { text })),
+      el('div', { class: 'alert-foot' }, [
+        el('span', { text: more ? `${more} more waiting` : '' }),
+        el('button', { class: 'btn primary', text: current.action, onclick: () => {
+          this.#notices = this.#notices.filter((n) => n !== current);
+          this.#drawNotice();
+          current.resolve();
+        } }),
+      ]),
+    ]));
   }
 
   // --- toasts --------------------------------------------------------------

@@ -17,6 +17,7 @@ const SHELL = [
   'js/main.js',
   'js/engine/engine.js',
   'js/engine/admin.js',
+  'js/engine/dataload.js',
   'js/engine/bus.js',
   'js/engine/geo.js',
   'js/engine/ui.js',

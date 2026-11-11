@@ -1,3 +1,12 @@
 {
-  "plugins": []
+  "plugins": [
+    {
+      "id": "ground-threats",
+      "name": "Ground threats",
+      "version": "0.1.0",
+      "description": "Loads the Ground Threat List (GTL), shows it on the map, and walks the user through position updates.",
+      "enabled": true,
+      "assets": ["sample-gtl.csv"]
+    }
+  ]
 }
