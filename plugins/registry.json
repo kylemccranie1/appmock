@@ -16,6 +16,13 @@
       "assets": ["sample-gtl.csv"]
     },
     {
+      "id": "targets",
+      "name": "Targets",
+      "version": "0.1.0",
+      "description": "Weapon-target pairs pushed with a target file: review on the map, accept or reject, then load into the weapon through the jet transfer.",
+      "enabled": true
+    },
+    {
       "id": "jet-transfer",
       "name": "Jet data transfer",
       "version": "0.1.0",

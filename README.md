@@ -25,7 +25,7 @@ of what is being proposed.
   precaches the app shell and every registered plugin. An optional online street map caches
   tiles as they are viewed.
 - **Data panel**: one upload slot per mission file type. The first is the Ground Threat List.
-- **Three plugins so far** (`plugins/ownship/`, `plugins/ground-threats/` and
+- **Four plugins so far** (`plugins/ownship/`, `plugins/ground-threats/`, `plugins/targets/` and
   `plugins/jet-transfer/`). Features are being added one at a time; the
   earlier demo plugins are in the git history.
 
@@ -75,6 +75,25 @@ Built so far:
 Simulated events in the admin console: *New threat*, *Threat position update*, *Threat type
 change*, *No longer a threat*, *Automatic updates* (every 30 s), *Reset to takeoff list*, *Jet link available*
 and *Next transfer fails*.
+
+## Use case: weapon-target pairs
+
+The tablet is pushed a pairing (this target, for the weapon on this station) together with a
+target file. The crew reviews it on the map, then pushes it to the jet to load the weapon.
+
+1. **Pairing arrives.** A notification names the target, station, weapon and file.
+2. **Review on the map.** Opening it zooms to the target drawn from the file: the aimpoint, the
+   target area, and a range and bearing line from ownship. The *Targets* tab shows the file's
+   contents and a set of checks: file checksum, valid coordinates, the station really holds the
+   weapon the pairing names, whether the target sits inside a threat ring, and whether it
+   replaces a target already loaded on that station.
+3. **Accept or reject.** A pairing that fails a check cannot be accepted.
+4. **Send to jet.** An accepted pairing joins the same bottom banner and transfer as threat
+   changes. When the jet confirms, the target is marked as loaded on that station.
+
+The stations, weapon names, targets and the target file format are all invented for the mockup.
+Simulated events in the admin console: *Weapon-target pair*, *Pair for the wrong weapon*, *Pair
+with a corrupt file* and *Clear all targets*.
 
 Other plugins can offer their own changes to the transfer: listen for `transfer:collect` and push
 `{ id, group, title, detail, apply() }` items into the array, emit `transfer:changed` when the

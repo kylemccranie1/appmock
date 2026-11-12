@@ -215,6 +215,19 @@ main { position: relative; flex: 1; display: flex; min-height: 0; }
 .row.change small { font: 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
+/* --- target review -------------------------------------------------------- */
+.checks { list-style: none; margin: 0 0 4px; padding: 0; font-size: 13px; }
+.checks li { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; }
+.checks b { flex: 0 0 18px; height: 18px; border-radius: 50%; font-size: 11px; line-height: 18px; text-align: center; color: #111; }
+.checks .ok b { background: var(--ok); }
+.checks .warn b { background: var(--warn); }
+.checks .fail b { background: var(--danger); color: #fff; }
+.checks .fail span { color: var(--danger); }
+.filetext {
+  margin: 6px 0 0; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg);
+  font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-all;
+}
+
 /* --- notifications that need acknowledging ------------------------------- */
 #alerts {
   position: absolute; z-index: 950; top: 56px; left: 50%; transform: translateX(-50%);
