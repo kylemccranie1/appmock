@@ -52,19 +52,19 @@ Built so far:
 
 1. **Load the Ground Threat List (GTL).** The GTL is the list the mission takes off with and what
    the jet already holds. Load it in the *Data* tab (file picker, drag and drop, or *Load
-   sample*). Format: CSV with a header row `id,name,type,lat,lon,radius_nm,status`, or JSON with
-   the same keys (an array, or `{ "threats": [...] }`). Positions are decimal degrees; `radius_nm`
-   and `status` (`ACTIVE`, `SUSPECTED` or `INACTIVE`) are optional. Invalid and duplicate rows are skipped and reported.
-2. **Threat update.** Five kinds are handled: a **new threat** that was not in the takeoff list,
-   a new **position**, a new **type** (with its threat ring size), a new **status** (active,
-   suspected or inactive), and **no longer a threat**. Each pops a notification saying what changed.
+   sample*). Format: CSV with a header row `id,name,type,lat,lon,radius_nm`, or JSON with the same
+   keys (an array, or `{ "threats": [...] }`). Positions are decimal degrees; `radius_nm` is
+   optional. Invalid and duplicate rows are skipped and reported.
+2. **Threat update.** Four kinds are handled: a **new threat** that was not in the takeoff list,
+   a new **position**, a new **type** (with its threat ring size), and **no longer a threat**. A
+   threat is either there or not; there are no in-between states, because the jet's inputs are
+   binary. Each pops a notification saying what changed.
    The map does not change until the user acknowledges.
 3. **Show the change against what the jet holds.** On acknowledge, the map zooms to the threat.
    A move shows a dashed ghost where the jet still has it and a line labelled with distance and
    bearing. A type change shows the new ring with the old ring dashed, and the label gives the
-   new type and ring sizes. A new threat is labelled NEW, and a status change is labelled with the
-   previous status. Active threats are drawn solid, suspected ones with a dashed ring, inactive
-   ones as a thin outline. A threat that is no longer a threat is greyed out.
+   new type and ring sizes. A new threat is labelled NEW. A threat that is no longer a threat is
+   greyed out.
 4. **Send to jet.** Each threat remembers the position the jet holds. Acknowledged moves show as
    "NOT IN JET" on the map and in the top bar, and a banner appears at the bottom of the map with
    a one-tap *Send to jet* button, followed by transfer progress and the result. The *Jet* tab
@@ -73,7 +73,7 @@ Built so far:
    its updated state and a removed threat disappears from the map; if the transfer fails, nothing changes in the jet and the user can retry.
 
 Simulated events in the admin console: *New threat*, *Threat position update*, *Threat type
-change*, *Threat status change*, *No longer a threat*, *Automatic updates* (every 30 s), *Reset to takeoff list*, *Jet link available*
+change*, *No longer a threat*, *Automatic updates* (every 30 s), *Reset to takeoff list*, *Jet link available*
 and *Next transfer fails*.
 
 Other plugins can offer their own changes to the transfer: listen for `transfer:collect` and push
