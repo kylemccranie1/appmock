@@ -156,7 +156,7 @@ export default {
       persist();
       ctx.admin.log(`GTL loaded: ${fileName} (${threats.length} threats)`);
       sync();
-      ctx.map.fitBounds(L.latLngBounds(threats.map((t) => [t.lat, t.lon])).pad(0.35));
+      ctx.focus(L.latLngBounds(threats.map((t) => [t.lat, t.lon])).pad(0.35));
     }
 
     ctx.data.addSlot({
@@ -283,7 +283,7 @@ export default {
         return [p.lat, p.lon];
       })));
       // Leave room for a waiting notification at the top and the banner at the bottom.
-      ctx.map.fitBounds(box, { maxZoom: 9, paddingTopLeft: [20, 200], paddingBottomRight: [20, 130] });
+      ctx.focus(box, { maxZoom: 9, paddingTopLeft: [20, 200], paddingBottomRight: [20, 130] });
       if (!t.removed) ctx.selection.set({ kind: 'threat', id: t.id });
     }
 

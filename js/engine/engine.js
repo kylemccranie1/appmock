@@ -181,6 +181,9 @@ export class Engine {
       geo,
       el,
       map: this.map,
+      // Move the map on purpose, to show something. This stops following ownship
+      // so the view stays where it was put; the follow button brings it back.
+      focus: (bounds, options) => { this.setFollow(false); this.map.fitBounds(bounds, options); },
       assetUrl: (rel) => new URL(rel, base).href,
       onDispose: track,
       every: (ms, fn) => { const h = setInterval(fn, ms); return track(() => clearInterval(h)); },

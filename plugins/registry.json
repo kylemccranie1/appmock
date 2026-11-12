@@ -1,6 +1,13 @@
 {
   "plugins": [
     {
+      "id": "ownship",
+      "name": "Ownship",
+      "version": "0.1.0",
+      "description": "Shows the jet's own position from its navigation data, with a trail and a warning when the data stops.",
+      "enabled": true
+    },
+    {
       "id": "ground-threats",
       "name": "Ground threats",
       "version": "0.1.0",

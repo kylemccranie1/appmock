@@ -25,8 +25,23 @@ of what is being proposed.
   precaches the app shell and every registered plugin. An optional online street map caches
   tiles as they are viewed.
 - **Data panel**: one upload slot per mission file type. The first is the Ground Threat List.
-- **Two plugins so far** (`plugins/ground-threats/` and `plugins/jet-transfer/`). Features are being added one at a time; the
+- **Three plugins so far** (`plugins/ownship/`, `plugins/ground-threats/` and
+  `plugins/jet-transfer/`). Features are being added one at a time; the
   earlier demo plugins are in the git history.
+
+## Ownship
+
+The tablet shows the jet's current position using navigation data from the jet: an aircraft
+symbol pointing along its track, a trail, and position, heading, ground speed and altitude in the
+top bar. The ◎ button keeps the map centred on the jet; dragging the map, or anything that moves
+the map on purpose (such as showing a threat update), turns it off so the view stays put.
+
+If the navigation data stops, the symbol greys out where it was last seen and the top bar counts
+how long ago that was.
+
+The feed is simulated: the jet flies a racetrack near the loaded threats. Admin console controls:
+*Jet navigation feed* (on/off), *Fast time (10×)*, *Start racetrack at map centre* and *Start
+racetrack at the threats*.
 
 ## Use case: threat updates in flight
 
@@ -111,6 +126,7 @@ Everything registered through `ctx` is cleaned up automatically when the plugin 
 | Member | Purpose |
 | --- | --- |
 | `ctx.map`, `ctx.L` | The Leaflet map and the Leaflet namespace |
+| `ctx.focus(bounds, options)` | Fit the map to something on purpose; stops following ownship |
 | `ctx.geo` | `distanceNm`, `bearingDeg`, `destination`, `fmtLatLon`, `fmtAlt`, `pad3`, `NM_TO_M` |
 | `ctx.el(tag, props, children)` | Small DOM builder |
 | `ctx.bus.on(event, fn)` / `ctx.bus.emit(event, data)` | Event bus |
