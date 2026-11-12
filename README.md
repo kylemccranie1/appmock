@@ -25,8 +25,8 @@ of what is being proposed.
   precaches the app shell and every registered plugin. An optional online street map caches
   tiles as they are viewed.
 - **Data panel**: one upload slot per mission file type. The first is the Ground Threat List.
-- **Four plugins so far** (`plugins/ownship/`, `plugins/ground-threats/`, `plugins/targets/` and
-  `plugins/jet-transfer/`). Features are being added one at a time; the
+- **Five plugins so far** (`plugins/ownship/`, `plugins/ground-threats/`, `plugins/targets/`,
+  `plugins/keys/` and `plugins/jet-transfer/`). Features are being added one at a time; the
   earlier demo plugins are in the git history.
 
 ## Ownship
@@ -94,6 +94,26 @@ target file. The crew reviews it on the map, then pushes it to the jet to load t
 The stations, weapon names, targets and the target file format are all invented for the mockup.
 Simulated events in the admin console: *Weapon-target pair*, *Pair for the wrong weapon*, *Pair
 with a corrupt file* and *Clear all targets*.
+
+## Use case: key manager
+
+Cryptographic keys are sent to the tablet and managed in the *Keys* tab.
+
+1. **Key arrives.** A notification names the key, its type and its validity period.
+2. **Review.** The key manager shows the key's details and checks: its fingerprint matches, it
+   is addressed to this tablet, it is within (or ahead of) its validity period, whether it is a
+   key type the tablet has not held before, and whether it supersedes the active key.
+3. **Store or reject.** A key that fails a check cannot be stored.
+4. **Manage.** Stored keys are listed by type as ACTIVE, FUTURE, SUPERSEDED or EXPIRED. The top
+   bar warns when a type has no active key. Keys can be deleted singly, or all at once with
+   *Zeroize all keys*.
+
+Key types are not fixed: the first key of an unknown type adds that type to the manager.
+
+The mockup holds **no key material**. A "key" is only a notional label, type, validity period and
+fingerprint, and the app states that the key itself is never displayed. Simulated events in the
+admin console: *New key*, *Key of a new type*, *Key that takes effect later*, *Key that fails its
+fingerprint*, *Key for another device* and *Expire an active key*.
 
 Other plugins can offer their own changes to the transfer: listen for `transfer:collect` and push
 `{ id, group, title, detail, apply() }` items into the array, emit `transfer:changed` when the

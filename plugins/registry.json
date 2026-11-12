@@ -23,6 +23,13 @@
       "enabled": true
     },
     {
+      "id": "keys",
+      "name": "Key manager",
+      "version": "0.1.0",
+      "description": "Cryptographic keys sent to the tablet: notification on arrival, checks, store or reject, and a list by type with validity. Notional details only; no key material.",
+      "enabled": true
+    },
+    {
       "id": "jet-transfer",
       "name": "Jet data transfer",
       "version": "0.1.0",
